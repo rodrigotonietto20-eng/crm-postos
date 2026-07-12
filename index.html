@@ -680,7 +680,17 @@ function loadData(){
   try{ localOwn = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
   var normalizado = deduplicarVisitas(localOwn);
   if(JSON.stringify(normalizado) !== JSON.stringify(localOwn)) saveData(normalizado);
-  return normalizado;
+  // Mescla com o cache da nuvem (dados do mesmo usuário criados em outro aparelho).
+  // O registro local tem prioridade em caso de mesmo id (edição ainda não sincronizada).
+  var cache = [];
+  try{ cache = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){}
+  var cacheOwn = cache.filter(function(v){ return (v.usuario||v.regional)===u; });
+  var merged = {};
+  cacheOwn.forEach(function(x){ if(x.id) merged[x.id]=x; });
+  normalizado.forEach(function(x){ if(x.id) merged[x.id]=x; });
+  var result = [];
+  Object.keys(merged).forEach(function(k){ result.push(merged[k]); });
+  return result;
 }
 function saveData(d){ localStorage.setItem('crm_v', JSON.stringify(d)); }
 
@@ -883,16 +893,11 @@ function doLogin(user){
   document.getElementById('user-badge').textContent = fmtReg(user);
   setupNovaVisita();
   navTo('dashboard');
-  var h = USERS[user];
-  var temEquipe = h && h.equipe && h.equipe.length;
-  if(user==='Diretor' || temEquipe){
-    fetchDadosDiretor();
-    if(STATE.dirRefreshTimer) clearInterval(STATE.dirRefreshTimer);
-    STATE.dirRefreshTimer = setInterval(function(){
-      var u = STATE.usuario;
-      if(u==='Diretor' || (USERS[u]&&USERS[u].equipe&&USERS[u].equipe.length)) fetchDadosDiretor();
-    }, 2*60*1000);
-  }
+  // Todos os perfis (inclusive regionais) buscam a nuvem, para ver os próprios
+  // dados em qualquer aparelho e não só o que foi criado localmente naquele device.
+  fetchDadosDiretor();
+  if(STATE.dirRefreshTimer) clearInterval(STATE.dirRefreshTimer);
+  STATE.dirRefreshTimer = setInterval(function(){ fetchDadosDiretor(); }, 2*60*1000);
   requestNotifPermission();
   setTimeout(function(){ verificarPendenciasEquipe(); updateSyncPendingBar(); }, 800);
   // Regionais buscam metas atualizadas do servidor
