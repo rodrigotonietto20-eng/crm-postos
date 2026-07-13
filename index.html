@@ -448,7 +448,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
   <div class="card hidden" id="card-historico-dem">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
-      <span>📜 Histórico de Demandas Anteriores</span>
+      <span>📋 Plano de Ação do Posto</span>
       <span id="hist-dem-count" style="font-size:11px;color:var(--txt2)"></span>
     </div>
     <div id="lista-historico-dem"></div>
@@ -1271,6 +1271,39 @@ function editarAgendamento(id){
   carregarHistoricoDemandas(v.postoFil, v.regional||v.usuario, id);
 }
 
+// Um item de demanda dentro do "Plano de Ação do Posto": status atual + timeline de intervenções (quem, quando, o que foi feito)
+function demandaItemHTML(v, d){
+  var icon = d.status==='resolvido'?'✅':d.status==='andamento'?'🔄':'⚠️';
+  var elId = 'pa-'+v.id+'-'+d.id;
+  var btns = d.status!=='resolvido'
+    ? '<div style="display:flex;gap:4px;margin-top:6px">'+
+        '<button class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+v.id+'\',\''+d.id+'\',\'resolvido\',\''+elId+'\')">✅ Resolvida</button>'+
+        (d.status!=='andamento'?'<button class="btn btn-sm" style="background:#e3f2fd;color:var(--azul);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+v.id+'\',\''+d.id+'\',\'andamento\',\''+elId+'\')">🔄 Andamento</button>':'')+
+        (d.status!=='pendente'?'<button class="btn btn-sm" style="background:#fff3e0;color:var(--laranja);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+v.id+'\',\''+d.id+'\',\'pendente\',\''+elId+'\')">⚠️ Pendente</button>':'')+
+      '</div>'
+    : '';
+  var timeline = (d.historico||[]).slice().reverse().map(function(hEntry){
+    var quando = new Date(hEntry.em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    var statusTxt = hEntry.status==='resolvido'?'Resolvido':hEntry.status==='andamento'?'Em andamento':'Pendente';
+    return '<div style="font-size:11px;color:var(--txt2);padding:4px 0;border-top:1px dashed var(--cinza2)">'+
+      '<strong style="color:var(--txt)">'+fmtReg(hEntry.usuario)+'</strong> · '+quando+' · '+statusTxt+
+      (hEntry.nota?'<br>'+hEntry.nota:'')+
+      '</div>';
+  }).join('');
+  return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:'+(d.status==='resolvido'?'#f1f8e9':d.status==='andamento'?'#e3f2fd':'#fff8e1')+'">'+
+    '<div style="display:flex;align-items:flex-start;gap:6px">'+
+    '<span style="font-size:15px">'+icon+'</span>'+
+    '<div style="flex:1;min-width:0">'+
+    '<div style="font-size:13px;font-weight:600">'+d.desc+'</div>'+
+    '<div style="font-size:11px;color:var(--txt2)">'+d.cat+' · <span class="badge badge-'+d.status+'" style="font-size:10px;padding:2px 6px">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span></div>'+
+    (timeline?'<div style="margin-top:6px">'+timeline+'</div>':'')+
+    btns+
+    '</div></div></div>';
+}
+
+// Plano de Ação do Posto: documento único, reúne TODAS as demandas de TODOS os usuários que já
+// passaram por aquele posto (loadAllData(), não filtrado por usuário), pra quem for visitar/agendar
+// em seguida ver o que já foi feito antes de chegar lá.
 function carregarHistoricoDemandas(postoFil, regional, excluirId){
   var card = document.getElementById('card-historico-dem');
   var lista = document.getElementById('lista-historico-dem');
@@ -1284,70 +1317,47 @@ function carregarHistoricoDemandas(postoFil, regional, excluirId){
   var totalDems = anteriores.reduce(function(s,v){ return s+(v.demandas||[]).length; },0);
   counter.textContent = totalDems+' demanda(s) em '+anteriores.length+' visita(s)';
   lista.innerHTML = anteriores.map(function(v){
-    var dems = v.demandas||[];
     var header = '<div style="font-size:12px;font-weight:700;color:var(--txt2);padding:8px 0 4px;border-bottom:1px solid var(--cinza2);margin-bottom:6px">'+
-      (v.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+'</div>';
-    var demsHtml = dems.map(function(d){
-      var icon = d.status==='resolvido'?'✅':d.status==='andamento'?'🔄':'⚠️';
-      var elId = 'hd-'+v.id+'-'+d.id;
-      var btns = d.status!=='resolvido'
-        ? '<div style="display:flex;gap:4px;margin-top:6px">'+
-            (d.status!=='resolvido'?'<button class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+v.id+'\',\''+d.id+'\',\'resolvido\',\''+elId+'\')">✅ Resolvida</button>':'')+
-            (d.status!=='andamento'?'<button class="btn btn-sm" style="background:#e3f2fd;color:var(--azul);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+v.id+'\',\''+d.id+'\',\'andamento\',\''+elId+'\')">🔄 Andamento</button>':'')+
-            (d.status!=='pendente'?'<button class="btn btn-sm" style="background:#fff3e0;color:var(--laranja);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+v.id+'\',\''+d.id+'\',\'pendente\',\''+elId+'\')">⚠️ Pendente</button>':'')+
-          '</div>'
-        : '';
-      return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:'+(d.status==='resolvido'?'#f1f8e9':d.status==='andamento'?'#e3f2fd':'#fff8e1')+'">'+
-        '<div style="display:flex;align-items:flex-start;gap:6px">'+
-        '<span style="font-size:15px">'+icon+'</span>'+
-        '<div style="flex:1;min-width:0">'+
-        '<div style="font-size:13px;font-weight:600">'+d.desc+'</div>'+
-        '<div style="font-size:11px;color:var(--txt2)">'+d.cat+' · <span class="badge badge-'+d.status+'" style="font-size:10px;padding:2px 6px">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span></div>'+
-        btns+
-        '</div></div></div>';
-    }).join('');
+      (v.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+' · '+fmtReg(v.usuario||v.regional)+'</div>';
+    var demsHtml = (v.demandas||[]).map(function(d){ return demandaItemHTML(v, d); }).join('');
     return '<div style="margin-bottom:12px">'+header+demsHtml+'</div>';
   }).join('');
 }
 
+// Envia só essa visita atualizada pro servidor (upsert por id) — necessário porque a demanda pode
+// pertencer a outro usuário, e sincronizarRegional() só reenvia os dados do próprio usuário logado.
+function syncVisitaUnica(v){
+  if(!navigator.onLine) return;
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({visitas:[v]}), headers:{'Content-Type':'application/json'} }).catch(function(){});
+}
+
 function atualizarStatusDemanda(visitaId, demandaId, novoStatus, elId){
+  var nota = prompt('O que foi feito? (deixe em branco pra pular, Cancelar não altera o status)');
+  if(nota===null) return;
   // Busca em crm_v (próprio) primeiro, depois em crm_dir_cache (outros usuários)
   var arr = []; try{ arr = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
   var v = arr.find(function(x){ return x.id===visitaId; });
-  if(v){
-    var d = (v.demandas||[]).find(function(x){ return x.id===demandaId; });
-    if(d){ d.status=novoStatus; localStorage.setItem('crm_v',JSON.stringify(arr)); }
-  } else {
+  var proprio = !!v;
+  if(!v){
     var cache = []; try{ cache = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){}
-    var vc = cache.find(function(x){ return x.id===visitaId; });
-    if(vc){
-      var dc = (vc.demandas||[]).find(function(x){ return x.id===demandaId; });
-      if(dc){ dc.status=novoStatus; localStorage.setItem('crm_dir_cache',JSON.stringify(cache)); }
-    }
-    v = vc; if(!v) return;
+    v = cache.find(function(x){ return x.id===visitaId; });
+    if(!v) return;
   }
   var d = (v.demandas||[]).find(function(x){ return x.id===demandaId; });
   if(!d) return;
-  sincronizarRegional();
+  d.status = novoStatus;
+  d.historico = d.historico||[];
+  d.historico.push({status:novoStatus, nota:nota||'', usuario:STATE.usuario, em:Date.now()});
+  if(proprio){
+    localStorage.setItem('crm_v', JSON.stringify(arr));
+    sincronizarRegional();
+  } else {
+    localStorage.setItem('crm_dir_cache', JSON.stringify(cache));
+    syncVisitaUnica(v);
+  }
   // Re-renderiza só o elemento alterado
   var el = document.getElementById(elId);
-  if(!el) return;
-  var icon = novoStatus==='resolvido'?'✅':novoStatus==='andamento'?'🔄':'⚠️';
-  var btns = novoStatus!=='resolvido'
-    ? '<div style="display:flex;gap:4px;margin-top:6px">'+
-        (novoStatus!=='resolvido'?'<button class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+visitaId+'\',\''+demandaId+'\',\'resolvido\',\''+elId+'\')">✅ Resolvida</button>':'')+
-        (novoStatus!=='andamento'?'<button class="btn btn-sm" style="background:#e3f2fd;color:var(--azul);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+visitaId+'\',\''+demandaId+'\',\'andamento\',\''+elId+'\')">🔄 Andamento</button>':'')+
-        (novoStatus!=='pendente'?'<button class="btn btn-sm" style="background:#fff3e0;color:var(--laranja);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+visitaId+'\',\''+demandaId+'\',\'pendente\',\''+elId+'\')">⚠️ Pendente</button>':'')+
-      '</div>'
-    : '';
-  el.style.background = novoStatus==='resolvido'?'#f1f8e9':novoStatus==='andamento'?'#e3f2fd':'#fff8e1';
-  el.innerHTML = '<div style="display:flex;align-items:flex-start;gap:6px">'+
-    '<span style="font-size:15px">'+icon+'</span>'+
-    '<div style="flex:1;min-width:0">'+
-    '<div style="font-size:13px;font-weight:600">'+d.desc+'</div>'+
-    '<div style="font-size:11px;color:var(--txt2)">'+d.cat+' · <span class="badge badge-'+novoStatus+'" style="font-size:10px;padding:2px 6px">'+(novoStatus==='resolvido'?'Resolvido':novoStatus==='andamento'?'Andamento':'Pendente')+'</span></div>'+
-    btns+
-    '</div></div>';
+  if(el) el.outerHTML = demandaItemHTML(v, d);
   toast(novoStatus==='resolvido'?'✅ Marcada como resolvida':novoStatus==='andamento'?'🔄 Em andamento':'⚠️ Mantida como pendente');
 }
 
@@ -2021,37 +2031,21 @@ function abrirVisita(id){
 
   document.getElementById('vd-content').innerHTML = html;
 
-  // Histórico de demandas de visitas anteriores ao mesmo posto
-  var anteriores = loadData().filter(function(x){
-    return x.postoFil===v.postoFil && (x.regional||x.usuario)===(v.regional||v.usuario) && x.id!==v.id && (x.demandas||[]).length>0;
+  // Plano de Ação do Posto — de TODOS os usuários que já passaram por ali (documento único do posto)
+  var anteriores = loadAllData().filter(function(x){
+    return x.postoFil===v.postoFil && x.id!==v.id && (x.demandas||[]).length>0;
   }).sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); });
 
   if(anteriores.length){
     var totalDems = anteriores.reduce(function(s,x){ return s+(x.demandas||[]).length; },0);
     var histHtml = '<div class="card" style="margin-top:12px"><div class="card-title" style="display:flex;align-items:center;justify-content:space-between">'+
-      '<span>📜 Histórico de Demandas Anteriores</span>'+
+      '<span>📋 Plano de Ação do Posto</span>'+
       '<span style="font-size:11px;color:var(--txt2)">'+totalDems+' em '+anteriores.length+' visita(s)</span>'+
       '</div>';
     histHtml += anteriores.map(function(x){
       var header = '<div style="font-size:12px;font-weight:700;color:var(--txt2);padding:6px 0 4px;border-bottom:1px solid var(--cinza2);margin-bottom:6px">'+
-        (x.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(x.data)+(x.hora?' '+x.hora:'')+'</div>';
-      var demsHtml = (x.demandas||[]).map(function(d){
-        var icon = d.status==='resolvido'?'✅':d.status==='andamento'?'🔄':'⚠️';
-        var elId = 'vdhd-'+x.id+'-'+d.id;
-        var btns = d.status!=='resolvido'
-          ? '<div style="display:flex;gap:4px;margin-top:6px">'+
-              '<button class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+x.id+'\',\''+d.id+'\',\'resolvido\',\''+elId+'\')">✅ Resolvida</button>'+
-              (d.status!=='andamento'?'<button class="btn btn-sm" style="background:#e3f2fd;color:var(--azul);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+x.id+'\',\''+d.id+'\',\'andamento\',\''+elId+'\')">🔄 Andamento</button>':'')+
-            '</div>'
-          : '';
-        return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:'+(d.status==='resolvido'?'#f1f8e9':d.status==='andamento'?'#e3f2fd':'#fff8e1')+'">'+
-          '<div style="display:flex;align-items:flex-start;gap:6px">'+
-          '<span style="font-size:15px">'+icon+'</span>'+
-          '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:13px;font-weight:600">'+d.desc+'</div>'+
-          '<div style="font-size:11px;color:var(--txt2)">'+d.cat+' · <span class="badge badge-'+d.status+'" style="font-size:10px;padding:2px 6px">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span></div>'+
-          btns+'</div></div></div>';
-      }).join('');
+        (x.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(x.data)+(x.hora?' '+x.hora:'')+' · '+fmtReg(x.usuario||x.regional)+'</div>';
+      var demsHtml = (x.demandas||[]).map(function(d){ return demandaItemHTML(x, d); }).join('');
       return '<div style="margin-bottom:12px">'+header+demsHtml+'</div>';
     }).join('');
     histHtml += '</div>';
