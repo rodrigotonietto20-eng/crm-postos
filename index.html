@@ -140,7 +140,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 .week-events{}
 
 /* ===== MINI AGENDA POR USUÁRIO ===== */
-.mini-agenda-row{padding:10px 0;border-bottom:1px solid var(--cinza2);cursor:pointer}
+.mini-agenda-row{padding:10px 0;border-bottom:1px solid var(--cinza2)}
 .mini-agenda-row:last-child{border-bottom:none}
 .mini-agenda-name{font-size:12px;font-weight:700;margin-bottom:6px}
 .mini-agenda-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
@@ -148,6 +148,12 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 .ma-day .ma-lbl{font-size:9px;font-weight:700;color:var(--txt2);text-transform:uppercase}
 .ma-day .ma-num{font-size:13px;font-weight:800;color:var(--txt2);margin-top:2px;min-height:15px}
 .ma-day.today{box-shadow:inset 0 0 0 1.5px var(--verde)}
+.mini-agenda-name{cursor:pointer}
+.mini-agenda-items{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.ma-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 8px;border-radius:8px;background:#fafafa;cursor:pointer}
+.ma-item-date{font-weight:700;color:var(--txt2);white-space:nowrap;min-width:52px}
+.ma-item-posto{color:var(--txt);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ma-item-mais{font-size:11px;color:var(--txt2);padding:2px 8px}
 .week-event-card{border-radius:10px;padding:12px 14px;margin-bottom:9px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;border-left:4px solid transparent;transition:transform .1s}
 .week-event-card:active{transform:scale(.99)}
 .we-time{font-size:11px;font-weight:700;color:var(--txt2);white-space:nowrap;min-width:40px;padding-top:1px}
@@ -1077,9 +1083,20 @@ function renderDashboard(){
           '<span class="ma-lbl" style="color:'+fg+'">'+diasLbl[i]+'</span>'+
           '<span class="ma-num" style="color:'+fg+'">'+(n>0?n:'')+'</span></div>';
       }).join('');
-      return '<div class="mini-agenda-row" onclick="irParaHistoricoDe(\''+u+'\')">'+
-        '<div class="mini-agenda-name" style="color:'+cor+'">'+fmtReg(u)+(doUsuario.length?' ('+doUsuario.length+')':'')+'</div>'+
-        '<div class="mini-agenda-strip">'+dias+'</div></div>';
+      var ordenado = doUsuario.slice().sort(function(a,b){ return a.data.localeCompare(b.data)||((a.hora||'').localeCompare(b.hora||'')); });
+      var itensHTML = ordenado.slice(0,6).map(function(v){
+        var isAgend = v.tipo==='agendamento';
+        return '<div class="ma-item" onclick="event.stopPropagation();abrirVisita(\''+v.id+'\')">'+
+          '<span class="ma-item-date">'+fmtDate(v.data)+(v.hora?' '+v.hora:'')+'</span>'+
+          '<span class="ma-item-posto">'+v.postoNome+'</span>'+
+          '<span class="badge '+(isAgend?'badge-agendada':'badge-ok')+'" style="margin-left:auto">'+(isAgend?'Agend.':'Realizada')+'</span></div>';
+      }).join('');
+      if(ordenado.length>6) itensHTML += '<div class="ma-item-mais">+'+(ordenado.length-6)+' mais</div>';
+      return '<div class="mini-agenda-row">'+
+        '<div class="mini-agenda-name" style="color:'+cor+'" onclick="irParaHistoricoDe(\''+u+'\')">'+fmtReg(u)+(doUsuario.length?' ('+doUsuario.length+')':'')+'</div>'+
+        '<div class="mini-agenda-strip">'+dias+'</div>'+
+        (itensHTML?'<div class="mini-agenda-items">'+itensHTML+'</div>':'')+
+        '</div>';
     }).join('');
   } else {
     agendasCard.classList.add('hidden');
