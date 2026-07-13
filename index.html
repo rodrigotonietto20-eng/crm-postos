@@ -506,6 +506,13 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 <!-- POSTO DETALHE -->
 <div id="screen-posto-detail" class="section hidden">
   <div id="pd-header" class="card"></div>
+  <div class="card hidden" id="card-pd-plano">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>📋 Plano de Ação do Posto</span>
+      <span id="pd-plano-count" style="font-size:11px;color:var(--txt2)"></span>
+    </div>
+    <div id="pd-plano"></div>
+  </div>
   <div class="card">
     <div class="card-title">Histórico de Visitas</div>
     <div id="pd-hist"></div>
@@ -1303,25 +1310,32 @@ function demandaItemHTML(v, d){
 
 // Plano de Ação do Posto: documento único, reúne TODAS as demandas de TODOS os usuários que já
 // passaram por aquele posto (loadAllData(), não filtrado por usuário), pra quem for visitar/agendar
-// em seguida ver o que já foi feito antes de chegar lá.
-function carregarHistoricoDemandas(postoFil, regional, excluirId){
-  var card = document.getElementById('card-historico-dem');
-  var lista = document.getElementById('lista-historico-dem');
-  var counter = document.getElementById('hist-dem-count');
-  var dados = loadAllData();
-  var anteriores = dados.filter(function(x){
+// em seguida ver o que já foi feito antes de chegar lá. Usado nas 3 telas que precisam disso
+// (registrar visita, detalhe da visita, detalhe do posto).
+function planoAcaoHTML(postoFil, excluirId){
+  var anteriores = loadAllData().filter(function(x){
     return x.postoFil===postoFil && x.id!==excluirId && (x.demandas||[]).length>0;
   }).sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); });
-  if(!anteriores.length){ card.classList.add('hidden'); return; }
-  card.classList.remove('hidden');
+  if(!anteriores.length) return {totalDems:0, totalVisitas:0, html:''};
   var totalDems = anteriores.reduce(function(s,v){ return s+(v.demandas||[]).length; },0);
-  counter.textContent = totalDems+' demanda(s) em '+anteriores.length+' visita(s)';
-  lista.innerHTML = anteriores.map(function(v){
+  var html = anteriores.map(function(v){
     var header = '<div style="font-size:12px;font-weight:700;color:var(--txt2);padding:8px 0 4px;border-bottom:1px solid var(--cinza2);margin-bottom:6px">'+
       (v.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+' · '+fmtReg(v.usuario||v.regional)+'</div>';
     var demsHtml = (v.demandas||[]).map(function(d){ return demandaItemHTML(v, d); }).join('');
     return '<div style="margin-bottom:12px">'+header+demsHtml+'</div>';
   }).join('');
+  return {totalDems:totalDems, totalVisitas:anteriores.length, html:html};
+}
+
+function carregarHistoricoDemandas(postoFil, regional, excluirId){
+  var card = document.getElementById('card-historico-dem');
+  var lista = document.getElementById('lista-historico-dem');
+  var counter = document.getElementById('hist-dem-count');
+  var r = planoAcaoHTML(postoFil, excluirId);
+  if(!r.totalVisitas){ card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  counter.textContent = r.totalDems+' demanda(s) em '+r.totalVisitas+' visita(s)';
+  lista.innerHTML = r.html;
 }
 
 // Envia só essa visita atualizada pro servidor (upsert por id) — necessário porque a demanda pode
@@ -1938,6 +1952,16 @@ function abrirPosto(fil, regional){
     '<div style="background:var(--cinza2);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--cinza)">'+totalDems+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">DEMANDAS</div></div>'+
     '</div>';
 
+  var cardPlano = document.getElementById('card-pd-plano');
+  var rPlano = planoAcaoHTML(fil, null);
+  if(rPlano.totalVisitas){
+    cardPlano.classList.remove('hidden');
+    document.getElementById('pd-plano-count').textContent = rPlano.totalDems+' demanda(s) em '+rPlano.totalVisitas+' visita(s)';
+    document.getElementById('pd-plano').innerHTML = rPlano.html;
+  } else {
+    cardPlano.classList.add('hidden');
+  }
+
   var hist = document.getElementById('pd-hist');
   if(!data.length){ hist.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma visita</p></div>'; return; }
   hist.innerHTML = data.map(function(v){
@@ -2032,24 +2056,13 @@ function abrirVisita(id){
   document.getElementById('vd-content').innerHTML = html;
 
   // Plano de Ação do Posto — de TODOS os usuários que já passaram por ali (documento único do posto)
-  var anteriores = loadAllData().filter(function(x){
-    return x.postoFil===v.postoFil && x.id!==v.id && (x.demandas||[]).length>0;
-  }).sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); });
-
-  if(anteriores.length){
-    var totalDems = anteriores.reduce(function(s,x){ return s+(x.demandas||[]).length; },0);
-    var histHtml = '<div class="card" style="margin-top:12px"><div class="card-title" style="display:flex;align-items:center;justify-content:space-between">'+
+  var rPlano = planoAcaoHTML(v.postoFil, v.id);
+  if(rPlano.totalVisitas){
+    document.getElementById('vd-content').innerHTML +=
+      '<div class="card" style="margin-top:12px"><div class="card-title" style="display:flex;align-items:center;justify-content:space-between">'+
       '<span>📋 Plano de Ação do Posto</span>'+
-      '<span style="font-size:11px;color:var(--txt2)">'+totalDems+' em '+anteriores.length+' visita(s)</span>'+
-      '</div>';
-    histHtml += anteriores.map(function(x){
-      var header = '<div style="font-size:12px;font-weight:700;color:var(--txt2);padding:6px 0 4px;border-bottom:1px solid var(--cinza2);margin-bottom:6px">'+
-        (x.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(x.data)+(x.hora?' '+x.hora:'')+' · '+fmtReg(x.usuario||x.regional)+'</div>';
-      var demsHtml = (x.demandas||[]).map(function(d){ return demandaItemHTML(x, d); }).join('');
-      return '<div style="margin-bottom:12px">'+header+demsHtml+'</div>';
-    }).join('');
-    histHtml += '</div>';
-    document.getElementById('vd-content').innerHTML += histHtml;
+      '<span style="font-size:11px;color:var(--txt2)">'+rPlano.totalDems+' em '+rPlano.totalVisitas+' visita(s)</span>'+
+      '</div>'+rPlano.html+'</div>';
   }
 }
 
