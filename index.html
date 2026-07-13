@@ -139,16 +139,14 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 .week-day.selected .wd-dot{background:#fff}
 .week-events{}
 
-/* ===== MINI AGENDA POR USUÁRIO ===== */
-.mini-agenda-row{padding:10px 0;border-bottom:1px solid var(--cinza2)}
-.mini-agenda-row:last-child{border-bottom:none}
-.mini-agenda-name{font-size:12px;font-weight:700;margin-bottom:6px}
+/* ===== CARD INDIVIDUAL POR USUÁRIO (status + mini agenda) ===== */
+.card-membro{padding-bottom:14px}
+.membro-header{display:flex;align-items:flex-start;gap:12px;cursor:pointer;margin-bottom:12px}
 .mini-agenda-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .ma-day{display:flex;flex-direction:column;align-items:center;padding:5px 2px;border-radius:8px;background:#f0f0f0;transition:background .15s}
 .ma-day .ma-lbl{font-size:9px;font-weight:700;color:var(--txt2);text-transform:uppercase}
 .ma-day .ma-num{font-size:13px;font-weight:800;color:var(--txt2);margin-top:2px;min-height:15px}
 .ma-day.today{box-shadow:inset 0 0 0 1.5px var(--verde)}
-.mini-agenda-name{cursor:pointer}
 .mini-agenda-items{margin-top:8px;display:flex;flex-direction:column;gap:5px}
 .ma-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 8px;border-radius:8px;background:#fafafa;cursor:pointer}
 .ma-item-date{font-weight:700;color:var(--txt2);white-space:nowrap;min-width:52px}
@@ -369,14 +367,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
     <div class="card-title">🚨 Postos sem visita há 30+ dias</div>
     <div id="list-postos-sem-visita"></div>
   </div>
-  <div class="card hidden" id="card-equipe-status">
-    <div class="card-title">👥 Status da Equipe</div>
-    <div id="list-equipe-status"></div>
-  </div>
-  <div class="card hidden" id="card-agendas-equipe">
-    <div class="card-title">🗓️ Mini Agenda da Semana — Equipe</div>
-    <div id="list-agendas-equipe"></div>
-  </div>
+  <div id="cards-equipe-individual"></div>
   <div class="card" id="card-pend">
     <div class="card-title">⚠️ Demandas Pendentes</div>
     <div id="list-pend"></div>
@@ -1031,13 +1022,16 @@ function renderDashboard(){
     }
   } else if(syncBar){ syncBar.remove(); }
 
-  // Status da equipe: visão rápida por pessoa para quem gerencia time
-  var equipeCard = document.getElementById('card-equipe-status');
+  // Um card individual por pessoa da equipe: status (última visita/pendências) + mini agenda da semana
+  var cardsWrap = document.getElementById('cards-equipe-individual');
   if(temEquipe){
-    equipeCard.classList.remove('hidden');
     var membros = user==='Diretor' ? visiveisFor('Diretor') : (h.equipe||[]);
     var todosDados = loadData();
-    document.getElementById('list-equipe-status').innerHTML = membros.map(function(m){
+    var semanaAtual = getWeekDates(0);
+    var diasLbl = ['SEG','TER','QUA','QUI','SEX','SAB','DOM'];
+    var hojeStr = today();
+    cardsWrap.innerHTML = membros.map(function(m){
+      var cor = corUser(m);
       var visitasM = todosDados.filter(function(v){ return (v.usuario||v.regional)===m && v.tipo==='visita'; }).sort(function(a,b){ return b.criadoEm-a.criadoEm; });
       var ultimaV = visitasM[0];
       var pendCount = 0;
@@ -1045,33 +1039,10 @@ function renderDashboard(){
         pendCount += (v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length;
       });
       var proxAg = todosDados.filter(function(v){ return (v.usuario||v.regional)===m && v.tipo==='agendamento' && v.data>=today(); }).sort(function(a,b){ return a.data.localeCompare(b.data); })[0];
-      var cor = corUser(m);
       var sub = ultimaV ? ('Última: '+ultimaV.postoNome+' · '+fmtDate(ultimaV.data)) : 'Sem visitas registradas';
       if(proxAg) sub += ' · Próx: '+fmtDate(proxAg.data);
-      return '<div class="list-item" onclick="irParaHistoricoDe(\''+m+'\')">'+
-        '<div class="list-icon" style="background:'+cor+'22;color:'+cor+'">'+fmtReg(m)[0]+'</div>'+
-        '<div class="list-body"><div class="list-title">'+fmtReg(m)+'</div>'+
-        '<div class="list-sub">'+sub+'</div></div>'+
-        (pendCount>0?'<span class="badge badge-pendente">'+pendCount+' pend.</span>':'<span class="badge badge-ok">OK</span>')+
-        '</div>';
-    }).join('');
-  } else {
-    equipeCard.classList.add('hidden');
-  }
 
-  // Mini agenda semanal por usuário (Seg a Dom, visitas + agendamentos)
-  var agendasCard = document.getElementById('card-agendas-equipe');
-  if(temEquipe){
-    agendasCard.classList.remove('hidden');
-    var membrosAg = user==='Diretor' ? visiveisFor('Diretor') : (h.equipe||[]);
-    var todosDadosAg = loadData();
-    var semanaAtual = getWeekDates(0);
-    var diasLbl = ['SEG','TER','QUA','QUI','SEX','SAB','DOM'];
-    var hojeStr = today();
-    var lag = document.getElementById('list-agendas-equipe');
-    lag.innerHTML = membrosAg.map(function(u){
-      var cor = corUser(u);
-      var doUsuario = todosDadosAg.filter(function(v){ return (v.usuario||v.regional)===u && v.data>=semanaAtual[0] && v.data<=semanaAtual[6]; });
+      var doUsuario = todosDados.filter(function(v){ return (v.usuario||v.regional)===m && v.data>=semanaAtual[0] && v.data<=semanaAtual[6]; });
       var porDia = {};
       doUsuario.forEach(function(v){ porDia[v.data]=(porDia[v.data]||0)+1; });
       var dias = semanaAtual.map(function(dt,i){
@@ -1086,20 +1057,26 @@ function renderDashboard(){
       var ordenado = doUsuario.slice().sort(function(a,b){ return a.data.localeCompare(b.data)||((a.hora||'').localeCompare(b.hora||'')); });
       var itensHTML = ordenado.slice(0,6).map(function(v){
         var isAgend = v.tipo==='agendamento';
-        return '<div class="ma-item" onclick="event.stopPropagation();abrirVisita(\''+v.id+'\')">'+
+        return '<div class="ma-item" onclick="abrirVisita(\''+v.id+'\')">'+
           '<span class="ma-item-date">'+fmtDate(v.data)+(v.hora?' '+v.hora:'')+'</span>'+
           '<span class="ma-item-posto">'+v.postoNome+'</span>'+
           '<span class="badge '+(isAgend?'badge-agendada':'badge-ok')+'" style="margin-left:auto">'+(isAgend?'Agend.':'Realizada')+'</span></div>';
       }).join('');
       if(ordenado.length>6) itensHTML += '<div class="ma-item-mais">+'+(ordenado.length-6)+' mais</div>';
-      return '<div class="mini-agenda-row">'+
-        '<div class="mini-agenda-name" style="color:'+cor+'" onclick="irParaHistoricoDe(\''+u+'\')">'+fmtReg(u)+(doUsuario.length?' ('+doUsuario.length+')':'')+'</div>'+
+
+      return '<div class="card card-membro">'+
+        '<div class="membro-header" onclick="irParaHistoricoDe(\''+m+'\')">'+
+        '<div class="list-icon" style="background:'+cor+'22;color:'+cor+'">'+fmtReg(m)[0]+'</div>'+
+        '<div class="list-body"><div class="list-title" style="color:'+cor+'">'+fmtReg(m)+'</div>'+
+        '<div class="list-sub">'+sub+'</div></div>'+
+        (pendCount>0?'<span class="badge badge-pendente">'+pendCount+' pend.</span>':'<span class="badge badge-ok">OK</span>')+
+        '</div>'+
         '<div class="mini-agenda-strip">'+dias+'</div>'+
         (itensHTML?'<div class="mini-agenda-items">'+itensHTML+'</div>':'')+
         '</div>';
     }).join('');
   } else {
-    agendasCard.classList.add('hidden');
+    cardsWrap.innerHTML = '';
   }
 
   // Lembrete: postos sem nenhuma visita realizada (de qualquer usuário) nos últimos 30 dias
