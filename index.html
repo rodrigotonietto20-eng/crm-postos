@@ -484,13 +484,17 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
   </div>
 </div>
 
-<!-- HISTORICO -->
+<!-- HISTORICO / PLANO DE AÇÃO -->
 <div id="screen-historico" class="section hidden">
+  <div class="filter-row" id="hist-mode-toggle" style="margin-bottom:10px">
+    <div class="filter-chip active" data-mode="posto" onclick="setHistMode('posto')">📋 Plano de Ação</div>
+    <div class="filter-chip" data-mode="usuario" onclick="setHistMode('usuario')">🕐 Histórico de Visitas</div>
+  </div>
   <div class="search-bar">
     <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input type="text" id="hist-search" placeholder="Buscar posto, regional..." oninput="renderHistorico()">
   </div>
-  <div class="filter-row" id="hist-filters"></div>
+  <div class="filter-row hidden" id="hist-filters"></div>
   <div id="hist-list"></div>
 </div>
 
@@ -571,8 +575,8 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
     Postos
   </button>
   <button class="nav-btn" data-screen="historico" onclick="navTo('historico',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-    Histórico
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3v2a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V3"/><path d="M9 12l2 2 4-4"/></svg>
+    Plano de Ação
   </button>
 </nav>
 
@@ -959,7 +963,7 @@ function doLogout(){
 
 // ==================== NAV ====================
 var SCREENS = ['dashboard','nova-visita','agenda','postos','historico','posto-detail','visita-detail','config','indicadores'];
-var TITLES = {dashboard:'Início','nova-visita':'Registrar Visita',agenda:'Agenda Semanal',postos:'Postos',historico:'Histórico','posto-detail':'Histórico do Posto','visita-detail':'Detalhe da Visita',config:'Configurações',indicadores:'Indicadores Mensais'};
+var TITLES = {dashboard:'Início','nova-visita':'Registrar Visita',agenda:'Agenda Semanal',postos:'Postos',historico:'Plano de Ação','posto-detail':'Histórico do Posto','visita-detail':'Detalhe da Visita',config:'Configurações',indicadores:'Indicadores Mensais'};
 
 function showScreen(name){
   SCREENS.forEach(function(s){ document.getElementById('screen-'+s).classList.add('hidden'); });
@@ -1823,13 +1827,23 @@ function exportarSemanaWhatsApp(){
   }
 }
 
-// ==================== HISTÓRICO ====================
+// ==================== HISTÓRICO / PLANO DE AÇÃO ====================
 var histFilter = 'todos';
+if(!STATE.histMode) STATE.histMode = 'posto';
+
+function setHistMode(mode){
+  STATE.histMode = mode;
+  document.querySelectorAll('#hist-mode-toggle .filter-chip').forEach(function(c){ c.classList.toggle('active', c.dataset.mode===mode); });
+  document.getElementById('hist-filters').classList.toggle('hidden', mode!=='usuario');
+  document.getElementById('hist-search').placeholder = mode==='posto' ? 'Buscar posto...' : 'Buscar posto, regional...';
+  renderHistorico();
+}
 
 function irParaHistoricoDe(u){
   navTo('historico');
   document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='historico'); });
   setTimeout(function(){
+    setHistMode('usuario');
     var chip = document.querySelector('#hist-filters [data-f="'+u+'"]');
     if(chip){
       document.querySelectorAll('#hist-filters .filter-chip').forEach(function(c){ c.classList.remove('active'); });
@@ -1847,6 +1861,53 @@ function setHistFilter(el){
 }
 
 function renderHistorico(){
+  if(STATE.histMode==='usuario') renderHistoricoPorUsuario();
+  else renderPlanoAcaoGeral();
+}
+
+// Plano de Ação: todos os postos visíveis ao usuário, cada um com seu documento único
+// (mesma planoAcaoHTML já usada em Registrar/Detalhe da Visita/Postos) — só entram postos
+// que já têm alguma demanda registrada, pra não poluir a tela com postos sem histórico.
+function renderPlanoAcaoGeral(){
+  var user = STATE.usuario;
+  var visiveisList = visiveisFor(user);
+  var search = ((document.getElementById('hist-search')||{}).value||'').toLowerCase();
+  var regs = user==='Diretor' ? Object.keys(POSTOS) : visiveisList.filter(function(u){ return POSTOS[u]; });
+  var todos = [];
+  regs.forEach(function(r){ (POSTOS[r]||[]).forEach(function(p){ todos.push({nome:p.nome,fil:p.fil,regional:r}); }); });
+  if(search) todos = todos.filter(function(p){ return p.nome.toLowerCase().includes(search)||fmtReg(p.regional).toLowerCase().includes(search); });
+
+  var comPlano = todos.map(function(p){
+    var r = planoAcaoHTML(p.fil, null);
+    return {posto:p, r:r};
+  }).filter(function(x){ return x.r.totalVisitas>0; });
+
+  // Postos com pendências primeiro, depois por quantidade de demandas
+  comPlano.sort(function(a,b){
+    var pa = (a.r.html.match(/badge-pendente/g)||[]).length;
+    var pb = (b.r.html.match(/badge-pendente/g)||[]).length;
+    if(pb!==pa) return pb-pa;
+    return b.r.totalDems-a.r.totalDems;
+  });
+
+  var list = document.getElementById('hist-list');
+  if(!comPlano.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhum posto com demandas registradas</p></div>'; return; }
+  list.innerHTML = comPlano.map(function(x){
+    var pendCount = (x.r.html.match(/badge-pendente/g)||[]).length;
+    var cor = CORES[x.posto.regional];
+    return '<div class="card" style="margin-bottom:10px">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer" onclick="abrirPosto('+x.posto.fil+',\''+x.posto.regional+'\')">'+
+      '<div style="width:36px;height:36px;border-radius:8px;background:'+cor+'22;display:flex;align-items:center;justify-content:center;font-weight:800;color:'+cor+'">'+x.posto.fil+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+      '<div style="font-weight:700;font-size:14px">'+x.posto.nome+'</div>'+
+      '<div style="font-size:12px;color:var(--txt2)">'+fmtReg(x.posto.regional)+' · '+x.r.totalDems+' demanda(s) em '+x.r.totalVisitas+' visita(s)</div>'+
+      '</div>'+
+      (pendCount>0?'<span class="badge badge-pendente">'+pendCount+' pend.</span>':'<span class="badge badge-ok">OK</span>')+
+      '</div>'+x.r.html+'</div>';
+  }).join('');
+}
+
+function renderHistoricoPorUsuario(){
   var user = STATE.usuario;
   var visiveisList = visiveisFor(user);
 
