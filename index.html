@@ -138,6 +138,16 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 .week-day .wd-dot{width:5px;height:5px;border-radius:50%;background:var(--verde);margin-top:3px}
 .week-day.selected .wd-dot{background:#fff}
 .week-events{}
+
+/* ===== MINI AGENDA POR USUÁRIO ===== */
+.mini-agenda-row{padding:10px 0;border-bottom:1px solid var(--cinza2);cursor:pointer}
+.mini-agenda-row:last-child{border-bottom:none}
+.mini-agenda-name{font-size:12px;font-weight:700;margin-bottom:6px}
+.mini-agenda-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.ma-day{display:flex;flex-direction:column;align-items:center;padding:5px 2px;border-radius:8px;background:#f0f0f0;transition:background .15s}
+.ma-day .ma-lbl{font-size:9px;font-weight:700;color:var(--txt2);text-transform:uppercase}
+.ma-day .ma-num{font-size:13px;font-weight:800;color:var(--txt2);margin-top:2px;min-height:15px}
+.ma-day.today{box-shadow:inset 0 0 0 1.5px var(--verde)}
 .week-event-card{border-radius:10px;padding:12px 14px;margin-bottom:9px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;border-left:4px solid transparent;transition:transform .1s}
 .week-event-card:active{transform:scale(.99)}
 .we-time{font-size:11px;font-weight:700;color:var(--txt2);white-space:nowrap;min-width:40px;padding-top:1px}
@@ -349,12 +359,16 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
     <div class="filter-chip" data-p="tudo" onclick="setPeriod(this)">Tudo</div>
   </div>
   <div id="dash-stats" class="stats-grid"></div>
+  <div class="card hidden" id="card-postos-sem-visita">
+    <div class="card-title">🚨 Postos sem visita há 30+ dias</div>
+    <div id="list-postos-sem-visita"></div>
+  </div>
   <div class="card hidden" id="card-equipe-status">
     <div class="card-title">👥 Status da Equipe</div>
     <div id="list-equipe-status"></div>
   </div>
   <div class="card hidden" id="card-agendas-equipe">
-    <div class="card-title">📅 Agendamentos da Semana por Usuário</div>
+    <div class="card-title">🗓️ Mini Agenda da Semana — Equipe</div>
     <div id="list-agendas-equipe"></div>
   </div>
   <div class="card" id="card-pend">
@@ -874,7 +888,7 @@ function getWeekDates(offset){
   var now = new Date();
   var dow = now.getDay();
   var monday = new Date(now);
-  monday.setDate(now.getDate() - dow + 1 + offset*7);
+  monday.setDate(now.getDate() + (dow===0?-6:1-dow) + offset*7);
   var days = [];
   for(var i=0;i<7;i++){
     var d = new Date(monday);
@@ -1039,38 +1053,80 @@ function renderDashboard(){
     equipeCard.classList.add('hidden');
   }
 
-  // Agendamentos da equipe nesta semana, agrupados por usuário
+  // Mini agenda semanal por usuário (Seg a Dom, visitas + agendamentos)
   var agendasCard = document.getElementById('card-agendas-equipe');
   if(temEquipe){
     agendasCard.classList.remove('hidden');
     var membrosAg = user==='Diretor' ? visiveisFor('Diretor') : (h.equipe||[]);
     var todosDadosAg = loadData();
     var semanaAtual = getWeekDates(0);
-    var agendasSemana = todosDadosAg.filter(function(v){
-      return v.tipo==='agendamento' && v.data>=semanaAtual[0] && v.data<=semanaAtual[6] && membrosAg.indexOf(v.usuario||v.regional)>=0;
-    }).sort(function(a,b){ return a.data.localeCompare(b.data)||((a.hora||'').localeCompare(b.hora||'')); });
+    var diasLbl = ['SEG','TER','QUA','QUI','SEX','SAB','DOM'];
+    var hojeStr = today();
     var lag = document.getElementById('list-agendas-equipe');
-    if(!agendasSemana.length){ lag.innerHTML='<div style="text-align:center;color:var(--txt2);font-size:13px;padding:16px">Nenhum agendamento nesta semana</div>'; }
-    else {
-      var porUsuario = {};
-      agendasSemana.forEach(function(v){
-        var u = v.usuario||v.regional;
-        (porUsuario[u]=porUsuario[u]||[]).push(v);
-      });
-      lag.innerHTML = membrosAg.filter(function(u){ return porUsuario[u]; }).map(function(u){
-        var cor = corUser(u);
-        return '<div style="font-size:12px;font-weight:700;color:'+cor+';padding:8px 0 4px">'+fmtReg(u)+' ('+porUsuario[u].length+')</div>'+
-          porUsuario[u].map(function(v){
-            return '<div class="list-item" onclick="abrirVisita(\''+v.id+'\')">'+
-              '<div class="list-icon" style="background:'+cor+'22;color:'+cor+';font-size:15px">'+fmtReg(u)[0]+'</div>'+
-              '<div class="list-body"><div class="list-title">'+v.postoNome+'</div>'+
-              '<div class="list-sub">'+fmtDate(v.data)+(v.hora?' '+v.hora:'')+'</div></div>'+
-              '<span class="badge badge-agendada">Agend.</span></div>';
-          }).join('');
+    lag.innerHTML = membrosAg.map(function(u){
+      var cor = corUser(u);
+      var doUsuario = todosDadosAg.filter(function(v){ return (v.usuario||v.regional)===u && v.data>=semanaAtual[0] && v.data<=semanaAtual[6]; });
+      var porDia = {};
+      doUsuario.forEach(function(v){ porDia[v.data]=(porDia[v.data]||0)+1; });
+      var dias = semanaAtual.map(function(dt,i){
+        var n = porDia[dt]||0;
+        var cls = 'ma-day'+(dt===hojeStr?' today':'');
+        var bg = n>0?cor:'#f0f0f0';
+        var fg = n>0?'#fff':'var(--txt2)';
+        return '<div class="'+cls+'" style="background:'+bg+'" title="'+fmtDate(dt)+' — '+n+' registro(s)">'+
+          '<span class="ma-lbl" style="color:'+fg+'">'+diasLbl[i]+'</span>'+
+          '<span class="ma-num" style="color:'+fg+'">'+(n>0?n:'')+'</span></div>';
       }).join('');
-    }
+      return '<div class="mini-agenda-row" onclick="irParaHistoricoDe(\''+u+'\')">'+
+        '<div class="mini-agenda-name" style="color:'+cor+'">'+fmtReg(u)+(doUsuario.length?' ('+doUsuario.length+')':'')+'</div>'+
+        '<div class="mini-agenda-strip">'+dias+'</div></div>';
+    }).join('');
   } else {
     agendasCard.classList.add('hidden');
+  }
+
+  // Lembrete: postos sem nenhuma visita realizada (de qualquer usuário) nos últimos 30 dias
+  var cardSemVisita = document.getElementById('card-postos-sem-visita');
+  var escopoPostos = [];
+  if(user==='Diretor'){
+    Object.keys(POSTOS).forEach(function(k){ (POSTOS[k]||[]).forEach(function(p){ escopoPostos.push({reg:k,nome:p.nome,fil:p.fil}); }); });
+  } else if(h && h.equipe && h.equipe.length){
+    h.equipe.forEach(function(m){ (POSTOS[m]||[]).forEach(function(p){ escopoPostos.push({reg:m,nome:p.nome,fil:p.fil}); }); });
+  } else {
+    (POSTOS[user]||[]).forEach(function(p){ escopoPostos.push({reg:user,nome:p.nome,fil:p.fil}); });
+  }
+  var cutoff30 = (function(){ var d=new Date(); d.setDate(d.getDate()-30); return localDateStr(d); })();
+  var todasVisitasReal = deduplicarVisitas(loadAllData()).filter(function(v){ return v.tipo==='visita'; });
+  var ultimaPorPosto = {};
+  todasVisitasReal.forEach(function(v){
+    var key = String(v.postoFil);
+    if(!ultimaPorPosto[key] || v.data > ultimaPorPosto[key]) ultimaPorPosto[key] = v.data;
+  });
+  var vistosFil = {};
+  var semVisita = escopoPostos.filter(function(p){
+    var key = String(p.fil);
+    if(vistosFil[key]) return false;
+    vistosFil[key] = true;
+    var ultima = ultimaPorPosto[key];
+    return !ultima || ultima < cutoff30;
+  }).map(function(p){ return {nome:p.nome, reg:p.reg, ultima:ultimaPorPosto[String(p.fil)]||null}; })
+    .sort(function(a,b){
+      if(!a.ultima && !b.ultima) return a.nome.localeCompare(b.nome);
+      if(!a.ultima) return -1;
+      if(!b.ultima) return 1;
+      return a.ultima.localeCompare(b.ultima);
+    });
+  if(semVisita.length){
+    cardSemVisita.classList.remove('hidden');
+    document.getElementById('list-postos-sem-visita').innerHTML = semVisita.map(function(p){
+      var sub = p.ultima ? ('Última visita: '+fmtDate(p.ultima)) : 'Nunca visitado';
+      return '<div class="list-item" onclick="irParaHistoricoDe(\''+p.reg+'\')">'+
+        '<div class="list-icon" style="background:#ffebee;color:var(--vermelho)">🚨</div>'+
+        '<div class="list-body"><div class="list-title">'+p.nome+'</div>'+
+        '<div class="list-sub">'+fmtReg(p.reg)+' · '+sub+'</div></div></div>';
+    }).join('');
+  } else {
+    cardSemVisita.classList.add('hidden');
   }
 
   var metaHTML='';
