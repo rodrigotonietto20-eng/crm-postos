@@ -2424,8 +2424,11 @@ function renderLoginAgendamentos(){
   if(!cache.length){ try{ cache = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){} }
   if(!cache.length) return;
   var hoje = today();
-  var semana = getWeekDates(0);
-  var semInicio = semana[0]; var semFim = semana[6];
+  // Janela rolante hoje+6 dias à frente (não a semana-calendário) — mesma lógica da
+  // mini agenda do dashboard, evita mostrar dias que já passaram.
+  var semInicio = hoje;
+  var semFimD = new Date(); semFimD.setDate(semFimD.getDate()+6);
+  var semFim = localDateStr(semFimD);
   var DIAS_ABREV = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   var agendSem = cache.filter(function(v){
     return v.tipo==='agendamento' && v.data>=semInicio && v.data<=semFim;
