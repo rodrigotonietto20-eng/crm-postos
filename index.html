@@ -1027,8 +1027,14 @@ function renderDashboard(){
   if(temEquipe){
     var membros = user==='Diretor' ? visiveisFor('Diretor') : (h.equipe||[]);
     var todosDados = loadData();
-    var semanaAtual = getWeekDates(0);
-    var diasLbl = ['SEG','TER','QUA','QUI','SEX','SAB','DOM'];
+    // Janela rolante dos próximos 7 dias (hoje + 6), não a semana-calendário —
+    // assim nunca mostra dias que já passaram, não importa em que dia da semana se acesse.
+    var semanaAtual = (function(){
+      var arr=[]; var base=new Date();
+      for(var i=0;i<7;i++){ var d=new Date(base); d.setDate(base.getDate()+i); arr.push(localDateStr(d)); }
+      return arr;
+    })();
+    var DIAS_ABREV_SEM = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
     var hojeStr = today();
     cardsWrap.innerHTML = membros.map(function(m){
       var cor = corUser(m);
@@ -1045,13 +1051,14 @@ function renderDashboard(){
       var doUsuario = todosDados.filter(function(v){ return (v.usuario||v.regional)===m && v.data>=semanaAtual[0] && v.data<=semanaAtual[6]; });
       var porDia = {};
       doUsuario.forEach(function(v){ porDia[v.data]=(porDia[v.data]||0)+1; });
-      var dias = semanaAtual.map(function(dt,i){
+      var dias = semanaAtual.map(function(dt){
         var n = porDia[dt]||0;
         var cls = 'ma-day'+(dt===hojeStr?' today':'');
         var bg = n>0?cor:'#f0f0f0';
         var fg = n>0?'#fff':'var(--txt2)';
+        var lbl = DIAS_ABREV_SEM[parseDateLocal(dt).getDay()];
         return '<div class="'+cls+'" style="background:'+bg+'" title="'+fmtDate(dt)+' — '+n+' registro(s)">'+
-          '<span class="ma-lbl" style="color:'+fg+'">'+diasLbl[i]+'</span>'+
+          '<span class="ma-lbl" style="color:'+fg+'">'+lbl+'</span>'+
           '<span class="ma-num" style="color:'+fg+'">'+(n>0?n:'')+'</span></div>';
       }).join('');
       var ordenado = doUsuario.slice().sort(function(a,b){ return a.data.localeCompare(b.data)||((a.hora||'').localeCompare(b.hora||'')); });
