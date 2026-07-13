@@ -495,6 +495,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
     <input type="text" id="hist-search" placeholder="Buscar posto, regional..." oninput="renderHistorico()">
   </div>
   <div class="filter-row hidden" id="hist-filters"></div>
+  <div class="filter-row" id="plano-regiao-filter"></div>
   <div id="hist-list"></div>
 </div>
 
@@ -1306,7 +1307,7 @@ function demandaItemHTML(v, d){
     '<span style="font-size:15px">'+icon+'</span>'+
     '<div style="flex:1;min-width:0">'+
     '<div style="font-size:13px;font-weight:600">'+d.desc+'</div>'+
-    '<div style="font-size:11px;color:var(--txt2)">'+d.cat+' · <span class="badge badge-'+d.status+'" style="font-size:10px;padding:2px 6px">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span></div>'+
+    '<div style="font-size:11px;color:var(--txt2)">'+d.cat+' · registrado por <strong style="color:var(--txt)">'+fmtReg(v.usuario||v.regional)+'</strong> · <span class="badge badge-'+d.status+'" style="font-size:10px;padding:2px 6px">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span></div>'+
     (timeline?'<div style="margin-top:6px">'+timeline+'</div>':'')+
     btns+
     '</div></div></div>';
@@ -1835,7 +1836,15 @@ function setHistMode(mode){
   STATE.histMode = mode;
   document.querySelectorAll('#hist-mode-toggle .filter-chip').forEach(function(c){ c.classList.toggle('active', c.dataset.mode===mode); });
   document.getElementById('hist-filters').classList.toggle('hidden', mode!=='usuario');
+  document.getElementById('plano-regiao-filter').classList.toggle('hidden', mode!=='posto');
   document.getElementById('hist-search').placeholder = mode==='posto' ? 'Buscar posto...' : 'Buscar posto, regional...';
+  renderHistorico();
+}
+
+function setPlanoRegiao(el){
+  document.querySelectorAll('#plano-regiao-filter .filter-chip').forEach(function(c){ c.classList.remove('active'); });
+  el.classList.add('active');
+  STATE.planoRegiao = el.dataset.r;
   renderHistorico();
 }
 
@@ -1865,45 +1874,55 @@ function renderHistorico(){
   else renderPlanoAcaoGeral();
 }
 
-// Plano de Ação: todos os postos visíveis ao usuário, cada um com seu documento único
-// (mesma planoAcaoHTML já usada em Registrar/Detalhe da Visita/Postos) — só entram postos
-// que já têm alguma demanda registrada, pra não poluir a tela com postos sem histórico.
+// Plano de Ação: lista recolhida de todos os postos visíveis com demanda registrada, filtrável
+// por região (chips) e busca por nome. Tocar um posto abre o plano completo dele (abrirPosto).
 function renderPlanoAcaoGeral(){
   var user = STATE.usuario;
   var visiveisList = visiveisFor(user);
   var search = ((document.getElementById('hist-search')||{}).value||'').toLowerCase();
   var regs = user==='Diretor' ? Object.keys(POSTOS) : visiveisList.filter(function(u){ return POSTOS[u]; });
+
+  // Filtro de região — construído uma vez por usuário
+  var regFiltEl = document.getElementById('plano-regiao-filter');
+  if(!regFiltEl.dataset.user || regFiltEl.dataset.user !== user){
+    regFiltEl.dataset.user = user;
+    regFiltEl.innerHTML = '<div class="filter-chip active" data-r="todos" onclick="setPlanoRegiao(this)">Todas as regiões</div>'+
+      regs.map(function(r){ return '<div class="filter-chip" data-r="'+r+'" onclick="setPlanoRegiao(this)">'+fmtReg(r)+'</div>'; }).join('');
+    STATE.planoRegiao = 'todos';
+  }
+  var regiaoSel = STATE.planoRegiao || 'todos';
+  var regsFiltrados = (regiaoSel==='todos') ? regs : [regiaoSel];
+
   var todos = [];
-  regs.forEach(function(r){ (POSTOS[r]||[]).forEach(function(p){ todos.push({nome:p.nome,fil:p.fil,regional:r}); }); });
+  regsFiltrados.forEach(function(r){ (POSTOS[r]||[]).forEach(function(p){ todos.push({nome:p.nome,fil:p.fil,regional:r}); }); });
   if(search) todos = todos.filter(function(p){ return p.nome.toLowerCase().includes(search)||fmtReg(p.regional).toLowerCase().includes(search); });
 
+  var dadosTodos = loadAllData();
   var comPlano = todos.map(function(p){
-    var r = planoAcaoHTML(p.fil, null);
-    return {posto:p, r:r};
-  }).filter(function(x){ return x.r.totalVisitas>0; });
+    var vis = dadosTodos.filter(function(v){ return v.postoFil===p.fil && (v.demandas||[]).length>0; });
+    var totalDems = vis.reduce(function(s,v){ return s+(v.demandas||[]).length; },0);
+    var pendCount = vis.reduce(function(s,v){ return s+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
+    return {posto:p, totalVisitas:vis.length, totalDems:totalDems, pendCount:pendCount};
+  }).filter(function(x){ return x.totalVisitas>0; });
 
   // Postos com pendências primeiro, depois por quantidade de demandas
   comPlano.sort(function(a,b){
-    var pa = (a.r.html.match(/badge-pendente/g)||[]).length;
-    var pb = (b.r.html.match(/badge-pendente/g)||[]).length;
-    if(pb!==pa) return pb-pa;
-    return b.r.totalDems-a.r.totalDems;
+    if(b.pendCount!==a.pendCount) return b.pendCount-a.pendCount;
+    return b.totalDems-a.totalDems;
   });
 
   var list = document.getElementById('hist-list');
   if(!comPlano.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhum posto com demandas registradas</p></div>'; return; }
   list.innerHTML = comPlano.map(function(x){
-    var pendCount = (x.r.html.match(/badge-pendente/g)||[]).length;
     var cor = CORES[x.posto.regional];
-    return '<div class="card" style="margin-bottom:10px">'+
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer" onclick="abrirPosto('+x.posto.fil+',\''+x.posto.regional+'\')">'+
-      '<div style="width:36px;height:36px;border-radius:8px;background:'+cor+'22;display:flex;align-items:center;justify-content:center;font-weight:800;color:'+cor+'">'+x.posto.fil+'</div>'+
+    return '<div class="posto-card" onclick="abrirPosto('+x.posto.fil+',\''+x.posto.regional+'\')">'+
+      '<div class="posto-num" style="background:'+cor+'22;color:'+cor+'">'+x.posto.fil+'</div>'+
       '<div style="flex:1;min-width:0">'+
-      '<div style="font-weight:700;font-size:14px">'+x.posto.nome+'</div>'+
-      '<div style="font-size:12px;color:var(--txt2)">'+fmtReg(x.posto.regional)+' · '+x.r.totalDems+' demanda(s) em '+x.r.totalVisitas+' visita(s)</div>'+
+      '<div class="posto-name">'+x.posto.nome+'</div>'+
+      '<div class="posto-meta">'+fmtReg(x.posto.regional)+' · '+x.totalDems+' demanda(s) em '+x.totalVisitas+' visita(s)</div>'+
       '</div>'+
-      (pendCount>0?'<span class="badge badge-pendente">'+pendCount+' pend.</span>':'<span class="badge badge-ok">OK</span>')+
-      '</div>'+x.r.html+'</div>';
+      (x.pendCount>0?'<span class="badge badge-pendente">'+x.pendCount+' pend.</span>':'<span class="badge badge-ok">OK</span>')+
+      '</div>';
   }).join('');
 }
 
