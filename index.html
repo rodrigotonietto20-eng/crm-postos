@@ -106,11 +106,13 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 .filter-chip.active{background:var(--verde);color:#fff;border-color:var(--verde)}
 
 /* POSTO CARD */
-.posto-card{background:#fff;border-radius:var(--radius);padding:13px 15px;margin-bottom:9px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;gap:12px;transition:transform .1s}
+.posto-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:9px}
+.posto-card{background:#fff;border-radius:var(--radius);padding:12px 13px;box-shadow:var(--shadow);cursor:pointer;transition:transform .1s}
 .posto-card:active{transform:scale(.98)}
-.posto-num{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
-.posto-name{font-weight:600;font-size:14px}
-.posto-meta{font-size:12px;color:var(--txt2);margin-top:2px}
+.posto-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.posto-num{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+.posto-name{font-weight:600;font-size:13px;line-height:1.3}
+.posto-meta{font-size:11px;color:var(--txt2);margin-top:3px}
 
 /* EMPTY */
 .empty{text-align:center;padding:36px 20px;color:var(--txt2)}
@@ -1716,12 +1718,12 @@ function renderPostos(){
     var np = vis.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
     var cor = CORES[p.regional];
     return '<div class="posto-card" onclick="abrirPosto('+p.fil+',\''+p.regional+'\')">'+
+      '<div class="posto-card-top">'+
       '<div class="posto-num" style="background:'+cor+'22;color:'+cor+'">'+p.fil+'</div>'+
-      '<div style="flex:1;min-width:0">'+
-      '<div class="posto-name">'+p.nome+'</div>'+
-      '<div class="posto-meta">'+fmtReg(p.regional)+' · '+(ult?'Última: '+fmtDate(ult.data):'Sem visitas')+'</div>'+
-      '</div>'+
       (np>0?'<span class="badge badge-pendente">'+np+'</span>':'')+
+      '</div>'+
+      '<div class="posto-name">'+p.nome+'</div>'+
+      '<div class="posto-meta">'+(ult?'Última: '+fmtDate(ult.data):'Sem visitas')+'</div>'+
       '</div>';
   };
 
@@ -1739,14 +1741,15 @@ function renderPostos(){
         '<div style="width:8px;height:8px;border-radius:50%;background:'+cor+';flex-shrink:0"></div>'+
         '<div style="font-size:12px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.5px">'+fmtReg(r)+'</div>'+
         '<div style="flex:1;height:1px;background:#e0e0e0"></div>'+
-        '</div>'+cards;
+        '</div>'+
+        '<div class="posto-grid">'+cards+'</div>';
     }).join('');
   } else {
-    // Regional/auditor individual: só os próprios postos, lista simples sem cabeçalho de grupo
+    // Regional/auditor individual: só os próprios postos, grid simples sem cabeçalho de grupo
     var todos = [];
     regs.forEach(function(r){ (POSTOS[r]||[]).forEach(function(p){ todos.push({nome:p.nome,fil:p.fil,regional:r}); }); });
     if(search) todos = todos.filter(function(p){ return p.nome.toLowerCase().includes(search)||String(p.fil).includes(search); });
-    list.innerHTML = todos.map(postoCardHTML).join('');
+    list.innerHTML = '<div class="posto-grid">'+todos.map(postoCardHTML).join('')+'</div>';
   }
 }
 
