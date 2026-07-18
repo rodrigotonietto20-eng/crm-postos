@@ -106,12 +106,13 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 .filter-chip.active{background:var(--verde);color:#fff;border-color:var(--verde)}
 
 /* POSTO CARD */
-.posto-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:9px}
-.posto-card{background:#fff;border-radius:var(--radius);padding:12px 13px;box-shadow:var(--shadow);cursor:pointer;transition:transform .1s}
+.posto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:9px}
+@media(max-width:480px){.posto-grid{grid-template-columns:repeat(2,1fr)}}
+.posto-card{background:#fff;border-radius:var(--radius);padding:9px 8px;box-shadow:var(--shadow);cursor:pointer;transition:transform .1s}
 .posto-card:active{transform:scale(.98)}
-.posto-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
-.posto-num{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
-.posto-name{font-weight:600;font-size:13px;line-height:1.3}
+.posto-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.posto-num{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0}
+.posto-name{font-weight:600;font-size:12px;line-height:1.25}
 .posto-meta{font-size:11px;color:var(--txt2);margin-top:3px}
 
 /* EMPTY */
@@ -459,7 +460,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
   <div id="week-events-container">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 0 8px">
       <div class="card-title" id="agenda-day-label" style="padding:0"></div>
-      <button class="btn btn-primary btn-sm" onclick="iniciarAgendaDia()" style="flex-shrink:0">➕ Agendar Visita</button>
+      <button class="btn btn-primary btn-sm" id="btn-agendar-dia" onclick="iniciarAgendaDia()" style="flex-shrink:0">➕ Agendar Visita</button>
     </div>
     <div id="week-events-list"></div>
   </div>
@@ -1435,6 +1436,10 @@ function renderWeekAgenda(){
   var filterEl = document.getElementById('agenda-tipo-filter');
   if(filterEl) filterEl.style.display = temEquipe ? 'flex' : 'none';
 
+  // Diretor só acompanha (visão sistêmica de todos), não agenda visita pra si mesmo
+  var btnAgendar = document.getElementById('btn-agendar-dia');
+  if(btnAgendar) btnAgendar.classList.toggle('hidden', user==='Diretor');
+
   var syncBar = document.getElementById('agenda-sync-bar');
   if(temEquipe){
     if(!syncBar){
@@ -1561,7 +1566,8 @@ function renderEventoCard(v, isHoje){
   var cor = corUser(v.usuario||v.regional);
   var isAgend = v.tipo==='agendamento';
   var np = (v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length;
-  var btnConfirmar = isAgend && isHoje ?
+  // Diretor só acompanha (visão sistêmica), não confirma visita — ação operacional de quem vai a campo
+  var btnConfirmar = isAgend && isHoje && STATE.usuario!=='Diretor' ?
     '<button class="btn btn-primary btn-sm" style="margin-top:10px;width:100%" onclick="confirmarVisita(\''+v.id+'\',event)">✅ Confirmar Visita Realizada</button>' : '';
   var icone = isAgend ? '📅' : '✅';
   var badgeEl = isAgend
@@ -1881,14 +1887,11 @@ function abrirVisita(id){
 
   document.getElementById('vd-content').innerHTML = html;
 
-  // Plano de Ação do Posto — de TODOS os usuários que já passaram por ali (documento único do posto)
-  var rPlano = planoAcaoHTML(v.postoFil, v.id);
-  if(rPlano.totalVisitas){
+  // Edição de demandas (Resolvida/Andamento) só acontece na tela Plano de Ação —
+  // aqui só um atalho pra chegar lá, sem duplicar os botões interativos.
+  if(v.postoFil>0){
     document.getElementById('vd-content').innerHTML +=
-      '<div class="card" style="margin-top:12px"><div class="card-title" style="display:flex;align-items:center;justify-content:space-between">'+
-      '<span>📋 Plano de Ação do Posto</span>'+
-      '<span style="font-size:11px;color:var(--txt2)">'+rPlano.totalDems+' em '+rPlano.totalVisitas+' visita(s)</span>'+
-      '</div>'+rPlano.html+'</div>';
+      '<button class="btn btn-secondary btn-full btn-sm" style="margin-top:12px" onclick="abrirPosto('+v.postoFil+',\''+v.regional+'\')">📋 Ver Plano de Ação completo do posto</button>';
   }
 }
 
