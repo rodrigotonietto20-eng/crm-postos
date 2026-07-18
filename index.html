@@ -470,6 +470,8 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
     <div class="card-title" id="agenda-day-label" style="padding:0 0 8px"></div>
     <div id="week-events-list"></div>
   </div>
+  <div class="card-title" style="padding:16px 0 8px">📋 Lista da Semana</div>
+  <div id="week-lista-completa"></div>
   <div style="padding:4px 0 12px">
     <button class="btn btn-secondary btn-full" onclick="exportarSemanaWhatsApp()" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25d366;color:#fff;border:none;font-size:13px;padding:13px">
       <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -1422,6 +1424,7 @@ function setAgendaFilter(el){
   var byDay = getByDay();
   renderWeekStrip(getWeekDates(STATE.weekOffset), byDay);
   if(STATE.agendaDay) renderAgendaDay(byDay);
+  renderWeekListaCompleta(getWeekDates(STATE.weekOffset), byDay);
 }
 
 function getByDay(){
@@ -1470,6 +1473,30 @@ function renderWeekAgenda(){
   var byDay = getByDay();
   renderWeekStrip(days, byDay);
   if(STATE.agendaDay) renderAgendaDay(byDay);
+  renderWeekListaCompleta(days, byDay);
+}
+
+// Lista corrida de todos os dias da semana (não só o dia selecionado no week-strip),
+// agrupada por data — visão "de relance" da semana inteira, abaixo do dia a dia.
+function renderWeekListaCompleta(days, byDay){
+  var wrap = document.getElementById('week-lista-completa');
+  if(!wrap) return;
+  var todosEvs = [];
+  days.forEach(function(ds){ (byDay[ds]||[]).forEach(function(v){ todosEvs.push(v); }); });
+  if(!todosEvs.length){
+    wrap.innerHTML = '<div class="card"><div class="no-events">Nenhum registro nesta semana</div></div>';
+    return;
+  }
+  todosEvs.sort(function(a,b){ return a.data.localeCompare(b.data) || (a.hora||'').localeCompare(b.hora||''); });
+  var porDia = {};
+  todosEvs.forEach(function(v){ if(!porDia[v.data]) porDia[v.data]=[]; porDia[v.data].push(v); });
+  wrap.innerHTML = Object.keys(porDia).sort().map(function(ds){
+    var d = parseDateLocal(ds);
+    var isHoje = ds===today();
+    var label = DIAS[d.getDay()]+' '+d.getDate()+'/'+MESES[d.getMonth()]+(isHoje?' · Hoje':'');
+    var cards = porDia[ds].map(function(v){ return renderEventoCard(v, isHoje); }).join('');
+    return '<div style="font-size:11px;font-weight:800;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 6px;padding-left:2px">'+label+'</div>'+cards;
+  }).join('');
 }
 
 function parseDateLocal(ds){
@@ -1679,13 +1706,11 @@ function renderPostos(){
   var search = ((document.getElementById('postos-search')||{}).value||'').toLowerCase();
   var user = STATE.usuario;
   var data = loadData();
-  var todos = [];
   var visiveisList = visiveisFor(user);
   var regs = user==='Diretor' ? Object.keys(POSTOS) : visiveisList.filter(function(u){ return POSTOS[u]; });
-  regs.forEach(function(r){ (POSTOS[r]||[]).forEach(function(p){ todos.push({nome:p.nome,fil:p.fil,regional:r}); }); });
-  if(search) todos = todos.filter(function(p){ return p.nome.toLowerCase().includes(search)||String(p.fil).includes(search); });
   var list = document.getElementById('postos-list');
-  list.innerHTML = todos.map(function(p){
+
+  var postoCardHTML = function(p){
     var vis = data.filter(function(v){ return v.postoFil===p.fil; });
     var ult = vis.sort(function(a,b){ return b.criadoEm-a.criadoEm; })[0];
     var np = vis.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
@@ -1698,7 +1723,31 @@ function renderPostos(){
       '</div>'+
       (np>0?'<span class="badge badge-pendente">'+np+'</span>':'')+
       '</div>';
-  }).join('');
+  };
+
+  if(regs.length > 1){
+    // Quem enxerga mais de uma pessoa (Diretor/gerentes): agrupa os postos por usuário,
+    // mesmo padrão visual já usado no agrupamento por pessoa da tela Agenda.
+    list.innerHTML = regs.map(function(r){
+      var postosR = (POSTOS[r]||[]).filter(function(p){
+        return !search || p.nome.toLowerCase().includes(search) || String(p.fil).includes(search);
+      });
+      if(!postosR.length) return '';
+      var cor = CORES[r];
+      var cards = postosR.map(function(p){ return postoCardHTML({nome:p.nome, fil:p.fil, regional:r}); }).join('');
+      return '<div style="display:flex;align-items:center;gap:6px;margin:14px 0 6px;padding-left:2px">'+
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+cor+';flex-shrink:0"></div>'+
+        '<div style="font-size:12px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.5px">'+fmtReg(r)+'</div>'+
+        '<div style="flex:1;height:1px;background:#e0e0e0"></div>'+
+        '</div>'+cards;
+    }).join('');
+  } else {
+    // Regional/auditor individual: só os próprios postos, lista simples sem cabeçalho de grupo
+    var todos = [];
+    regs.forEach(function(r){ (POSTOS[r]||[]).forEach(function(p){ todos.push({nome:p.nome,fil:p.fil,regional:r}); }); });
+    if(search) todos = todos.filter(function(p){ return p.nome.toLowerCase().includes(search)||String(p.fil).includes(search); });
+    list.innerHTML = todos.map(postoCardHTML).join('');
+  }
 }
 
 function abrirPosto(fil, regional){
