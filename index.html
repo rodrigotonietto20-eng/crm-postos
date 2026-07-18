@@ -438,14 +438,6 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
     </div>
   </div>
 
-  <div class="card hidden" id="card-historico-dem">
-    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
-      <span>📋 Plano de Ação do Posto</span>
-      <span id="hist-dem-count" style="font-size:11px;color:var(--txt2)"></span>
-    </div>
-    <div id="lista-historico-dem"></div>
-  </div>
-
   <button class="btn btn-primary btn-full" onclick="salvarVisita()" style="margin-bottom:16px">💾 Salvar Registro</button>
 </div>
 
@@ -1077,8 +1069,6 @@ function setupNovaVisita(){
   document.getElementById('card-demandas').classList.remove('hidden');
   document.getElementById('grp-hora').classList.remove('hidden');
   document.getElementById('lbl-data').textContent = 'Data da Visita';
-  document.getElementById('card-historico-dem').classList.add('hidden');
-  document.getElementById('lista-historico-dem').innerHTML = '';
 }
 
 function editarAgendamento(id){
@@ -1111,7 +1101,6 @@ function editarAgendamento(id){
   lista.innerHTML = '';
   (v.demandas||[]).forEach(function(d){ addDemanda(d.desc, d.cat, d.status, d.responsavel, d.prazo, d.como); });
   navTo('nova-visita');
-  carregarHistoricoDemandas(v.postoFil, v.regional||v.usuario, id);
 }
 
 // Um item de demanda dentro do "Plano de Ação do Posto": status atual + timeline de intervenções (quem, quando, o que foi feito)
@@ -1168,17 +1157,6 @@ function planoAcaoHTML(postoFil, excluirId){
     return '<div style="margin-bottom:12px">'+header+demsHtml+'</div>';
   }).join('');
   return {totalDems:totalDems, totalVisitas:anteriores.length, html:html};
-}
-
-function carregarHistoricoDemandas(postoFil, regional, excluirId){
-  var card = document.getElementById('card-historico-dem');
-  var lista = document.getElementById('lista-historico-dem');
-  var counter = document.getElementById('hist-dem-count');
-  var r = planoAcaoHTML(postoFil, excluirId);
-  if(!r.totalVisitas){ card.classList.add('hidden'); return; }
-  card.classList.remove('hidden');
-  counter.textContent = r.totalDems+' demanda(s) em '+r.totalVisitas+' visita(s)';
-  lista.innerHTML = r.html;
 }
 
 // Envia só essa visita atualizada pro servidor (upsert por id) — necessário porque a demanda pode
@@ -1249,16 +1227,9 @@ function atualizarPostos(){
 
 function onPostoChanged(){
   var postoVal = document.getElementById('reg-posto').value;
-  if(!postoVal || postoVal==='_matriz|0'){
-    document.getElementById('card-historico-dem').classList.add('hidden');
-    document.getElementById('lista-historico-dem').innerHTML='';
-    return;
-  }
-  var partes = postoVal.split('|');
-  var reg = partes[0];
-  var fil = parseInt(partes[1]);
+  if(!postoVal || postoVal==='_matriz|0') return;
+  var fil = parseInt(postoVal.split('|')[1]);
   if(!fil) return;
-  carregarHistoricoDemandas(fil, reg, STATE.editandoId||null);
   // Nudge: em visita realizada a um posto real, já abre uma linha de demanda pronta pra preencher
   if(STATE.tipoReg==='visita' && !document.querySelectorAll('#lista-demandas .dem-row').length && !document.getElementById('chk-sem-demanda').checked){
     addDemanda();
@@ -1634,6 +1605,7 @@ function confirmarVisita(id, ev){
   }
 
   STATE.agendamentoOrigemId = id;
+  STATE.editandoId = null;
   navTo('nova-visita');
 
   setTimeout(function(){
@@ -1652,7 +1624,6 @@ function confirmarVisita(id, ev){
     document.getElementById('lista-demandas').innerHTML = '';
     document.getElementById('chk-sem-demanda').checked = false;
     toggleSemDemanda(document.getElementById('chk-sem-demanda'));
-    carregarHistoricoDemandas(v.postoFil, v.regional||v.usuario, id);
     addDemanda();
     var totalPend = pendentesAnteriores.length;
     if(totalPend) toast('⚠️ '+totalPend+' pendência(s) no histórico — verifique abaixo');
