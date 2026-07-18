@@ -465,7 +465,10 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
     <div class="filter-chip" data-at="todos" onclick="setAgendaFilter(this)">Todos</div>
   </div>
   <div id="week-events-container">
-    <div class="card-title" id="agenda-day-label" style="padding:0 0 8px"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 0 8px">
+      <div class="card-title" id="agenda-day-label" style="padding:0"></div>
+      <button class="btn btn-primary btn-sm" onclick="iniciarAgendaDia()" style="flex-shrink:0">➕ Agendar Visita</button>
+    </div>
     <div id="week-events-list"></div>
   </div>
   <div class="card-title" style="padding:16px 0 8px">📋 Lista da Semana</div>
@@ -1037,6 +1040,7 @@ function renderPostosSemVisita(){
 
 // ==================== NOVA VISITA ====================
 function setupNovaVisita(){
+  STATE.editandoId = null;
   document.getElementById('reg-data').value = today();
   document.getElementById('reg-hora').value = new Date().toTimeString().slice(0,5);
   document.getElementById('reg-obs').value = '';
@@ -1526,6 +1530,17 @@ function selectAgendaDay(ds){
   var byDay = getByDay();
   renderWeekStrip(getWeekDates(STATE.weekOffset), byDay);
   renderAgendaDay(byDay);
+}
+
+// Atalho "➕ Agendar Visita" no dia selecionado da Agenda: abre o formulário já em modo
+// "Agendar Visita" com a data do dia clicado — o usuário escolhe o posto e o horário.
+// Cada clique cria um agendamento novo e independente, então dá pra repetir várias vezes
+// no mesmo dia sem problema (mais de uma visita agendada por dia).
+function iniciarAgendaDia(){
+  setupNovaVisita();
+  document.querySelector('[data-tipo="agendamento"]').click();
+  document.getElementById('reg-data').value = STATE.agendaDay || today();
+  navTo('nova-visita');
 }
 
 function renderAgendaDay(byDay){
