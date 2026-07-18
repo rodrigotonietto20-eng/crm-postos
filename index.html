@@ -226,7 +226,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
 /* PRINT */
 @media print{
-  .bottom-nav,.header,.btn,.toast,.offline-bar,.sync-pending-bar,#dir-sync-bar,.period-filter,#import-file{display:none!important}
+  .bottom-nav,.header,.btn,.toast,.offline-bar,.sync-pending-bar,#import-file{display:none!important}
   body{background:#fff;padding:0}
   .card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid;margin-bottom:8px}
   #print-header{display:block!important}
@@ -267,30 +267,35 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
     </div>
 
     <!-- NÍVEL 2: Gerentes -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:0">
-      <button class="login-btn" data-user="Luiz" onclick="doLogin('Luiz')" style="padding:10px 5px">
-        <div class="login-av" style="background:#1b5e20;width:36px;height:36px;font-size:13px">L</div>
-        <span style="font-size:11px">Luiz Lira</span><small>G. Operações</small>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:0">
+      <button class="login-btn" data-user="Luiz" onclick="doLogin('Luiz')" style="padding:8px 3px">
+        <div class="login-av" style="background:#1b5e20;width:32px;height:32px;font-size:12px">L</div>
+        <span style="font-size:10px">Luiz Lira</span><small>G. Operações</small>
       </button>
-      <button class="login-btn" data-user="Rodrigo" onclick="doLogin('Rodrigo')" style="padding:10px 5px">
-        <div class="login-av" style="background:#0277bd;width:36px;height:36px;font-size:13px">R</div>
-        <span style="font-size:11px">Rodrigo</span><small>G. Comercial</small>
+      <button class="login-btn" data-user="Rodrigo" onclick="doLogin('Rodrigo')" style="padding:8px 3px">
+        <div class="login-av" style="background:#0277bd;width:32px;height:32px;font-size:12px">R</div>
+        <span style="font-size:10px">Rodrigo</span><small>G. Comercial</small>
       </button>
-      <button class="login-btn" data-user="Alisson" onclick="doLogin('Alisson')" style="padding:10px 5px">
-        <div class="login-av" style="background:#6a1b9a;width:36px;height:36px;font-size:13px">A</div>
-        <span style="font-size:11px">Alisson</span><small>G. Conveniência</small>
+      <button class="login-btn" data-user="Alisson" onclick="doLogin('Alisson')" style="padding:8px 3px">
+        <div class="login-av" style="background:#6a1b9a;width:32px;height:32px;font-size:12px">A</div>
+        <span style="font-size:10px">Alisson</span><small>G. Conveniência</small>
+      </button>
+      <button class="login-btn" data-user="Cassiano" onclick="doLogin('Cassiano')" style="padding:8px 3px">
+        <div class="login-av" style="background:#ef6c00;width:32px;height:32px;font-size:12px">C</div>
+        <span style="font-size:10px">Cassiano</span><small>G. Auditoria</small>
       </button>
     </div>
 
     <!-- Conectores: Gerentes → Subordinados -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
+      <div style="display:flex;justify-content:center"><div style="width:2px;height:10px;background:rgba(255,255,255,.4)"></div></div>
       <div style="display:flex;justify-content:center"><div style="width:2px;height:10px;background:rgba(255,255,255,.4)"></div></div>
       <div style="display:flex;justify-content:center"><div style="width:2px;height:10px;background:rgba(255,255,255,.4)"></div></div>
       <div style="display:flex;justify-content:center"><div style="width:2px;height:10px;background:rgba(255,255,255,.4)"></div></div>
     </div>
 
     <!-- NÍVEL 3: Subordinados -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:start">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;align-items:start">
 
       <!-- Equipe Luiz -->
       <div style="display:flex;flex-direction:column;gap:4px;border-left:2px solid rgba(255,255,255,.3);padding-left:5px">
@@ -340,6 +345,18 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
         </button>
       </div>
 
+      <!-- Equipe Cassiano -->
+      <div style="display:flex;flex-direction:column;gap:4px;border-left:2px solid rgba(255,255,255,.3);padding-left:5px">
+        <button class="login-btn" data-user="JoaoAuditor" onclick="doLogin('JoaoAuditor')" style="padding:8px 4px">
+          <div class="login-av" style="background:#1565c0;width:30px;height:30px;font-size:12px">J</div>
+          <span style="font-size:11px">João</span><small>Auditor</small>
+        </button>
+        <button class="login-btn" data-user="Ronai" onclick="doLogin('Ronai')" style="padding:8px 4px">
+          <div class="login-av" style="background:#ef6c00;width:30px;height:30px;font-size:12px">R</div>
+          <span style="font-size:11px">Ronai</span><small>Auditor</small>
+        </button>
+      </div>
+
     </div>
   </div><!-- /organograma -->
 </div>
@@ -349,38 +366,11 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
 <div class="header" id="app-header">
   <button class="btn-back hidden" id="btn-back" onclick="goBack()">←</button>
-  <h1 id="header-title">Início</h1>
+  <h1 id="header-title">Plano de Ação</h1>
   <div class="user-badge" id="user-badge" onclick="doLogout()">Sair</div>
 </div>
 
-<!-- DASHBOARD -->
-<div id="screen-dashboard" class="section">
-  <div id="sync-pending-bar" class="sync-pending-bar"></div>
-  <div class="period-filter" id="period-filter">
-    <div class="filter-chip active" data-p="mes" onclick="setPeriod(this)">Este mês</div>
-    <div class="filter-chip" data-p="semana" onclick="setPeriod(this)">Esta semana</div>
-    <div class="filter-chip" data-p="hoje" onclick="setPeriod(this)">Hoje</div>
-    <div class="filter-chip" data-p="tudo" onclick="setPeriod(this)">Tudo</div>
-  </div>
-  <div id="cards-equipe-individual"></div>
-  <div id="dash-stats" class="stats-grid"></div>
-  <div class="card hidden" id="card-postos-sem-visita">
-    <div class="card-title">🚨 Postos sem visita há 30+ dias</div>
-    <div id="list-postos-sem-visita"></div>
-  </div>
-  <div class="card" id="card-pend">
-    <div class="card-title">⚠️ Demandas Pendentes</div>
-    <div id="list-pend"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">📅 Próximas Visitas</div>
-    <div id="list-prox"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">🕐 Últimas Visitas</div>
-    <div id="list-rec"></div>
-  </div>
-</div>
+<div id="sync-pending-bar" class="sync-pending-bar"></div>
 
 <!-- NOVA VISITA -->
 <div id="screen-nova-visita" class="section hidden">
@@ -484,23 +474,12 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
   </div>
 </div>
 
-<!-- HISTORICO / PLANO DE AÇÃO -->
-<div id="screen-historico" class="section hidden">
-  <div class="filter-row" id="hist-mode-toggle" style="margin-bottom:10px">
-    <div class="filter-chip active" data-mode="posto" onclick="setHistMode('posto')">📋 Plano de Ação</div>
-    <div class="filter-chip" data-mode="usuario" onclick="setHistMode('usuario')">🕐 Histórico de Visitas</div>
-  </div>
-  <div class="search-bar">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input type="text" id="hist-search" placeholder="Buscar posto, regional..." oninput="renderHistorico()">
-  </div>
-  <div class="filter-row hidden" id="hist-filters"></div>
-  <div class="filter-row" id="plano-regiao-filter"></div>
-  <div id="hist-list"></div>
-</div>
-
-<!-- POSTOS -->
+<!-- POSTOS / PLANO DE AÇÃO -->
 <div id="screen-postos" class="section hidden">
+  <div class="card hidden" id="card-postos-sem-visita">
+    <div class="card-title">🚨 Postos sem visita há 30+ dias</div>
+    <div id="list-postos-sem-visita"></div>
+  </div>
   <div class="search-bar">
     <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input type="text" id="postos-search" placeholder="Buscar posto..." oninput="renderPostos()">
@@ -559,24 +538,12 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav hidden" id="bottom-nav">
-  <button class="nav-btn active" data-screen="dashboard" onclick="navTo('dashboard',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    Início
-  </button>
-  <button class="nav-btn" data-screen="nova-visita" onclick="navTo('nova-visita',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-    Registrar
-  </button>
   <button class="nav-btn" data-screen="agenda" onclick="navTo('agenda',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     Agenda
   </button>
-  <button class="nav-btn" data-screen="postos" onclick="navTo('postos',this)">
+  <button class="nav-btn active" data-screen="postos" onclick="navTo('postos',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    Postos
-  </button>
-  <button class="nav-btn" data-screen="historico" onclick="navTo('historico',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3v2a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V3"/><path d="M9 12l2 2 4-4"/></svg>
     Plano de Ação
   </button>
 </nav>
@@ -630,6 +597,7 @@ var USERS = {
   Luiz:      { label:'Luiz Lira',             role:'Gerente de Operações',      cor:'#1b5e20', inicial:'L', equipe:['Fabricio','Adelcio','Joao','Edinei','Giovani'], todosPostos:true },
   Rodrigo:   { label:'Rodrigo Pasquali',      role:'Gerente Comercial',         cor:'#0277bd', inicial:'R', equipe:['Josias','Mateus'], todosPostos:true },
   Alisson:   { label:'Alisson Fernandes',     role:'Gerente de Conveniência',   cor:'#6a1b9a', inicial:'A', equipe:['Lisiane','Endiel'], todosPostos:true },
+  Cassiano:  { label:'Cassiano',              role:'Gestor de Auditoria',       cor:'#ef6c00', inicial:'C', equipe:['JoaoAuditor','Ronai'], todosPostos:true },
   Fabricio:  { label:'Fabricio',              role:'Regional',                  cor:'#2e7d32', inicial:'F', equipe:null },
   Adelcio:   { label:'Adelcio',               role:'Regional',                  cor:'#00838f', inicial:'A', equipe:null },
   Joao:      { label:'João',                  role:'Regional',                  cor:'#1565c0', inicial:'J', equipe:null },
@@ -639,9 +607,11 @@ var USERS = {
   Mateus:    { label:'Mateus',                role:'Multiplicador',             cor:'#558b2f', inicial:'M', equipe:null, todosPostos:true },
   Lisiane:   { label:'Lisiane',               role:'Especialista de Lojas',     cor:'#c62828', inicial:'L', equipe:null, todosPostos:true },
   Endiel:    { label:'Endiel',                role:'Especialista de Lojas',     cor:'#6a1b9a', inicial:'E', equipe:null, todosPostos:true },
+  JoaoAuditor: { label:'João',                role:'Auditor',                   cor:'#1565c0', inicial:'J', equipe:null, todosPostos:true },
+  Ronai:     { label:'Ronai',                 role:'Auditor',                   cor:'#ef6c00', inicial:'R', equipe:null, todosPostos:true },
 };
 
-var METAS_DEFAULT = {Fabricio:25,Adelcio:25,Joao:25,Edinei:25,Giovani:25,Josias:25,Mateus:25,Lisiane:25,Endiel:25,Luiz:25,Rodrigo:25,Alisson:25};
+var METAS_DEFAULT = {Fabricio:25,Adelcio:25,Joao:25,Edinei:25,Giovani:25,Josias:25,Mateus:25,Lisiane:25,Endiel:25,Luiz:25,Rodrigo:25,Alisson:25,Cassiano:25,JoaoAuditor:25,Ronai:25};
 function loadMetas(){ try{ return JSON.parse(localStorage.getItem('crm_metas')||'null')||METAS_DEFAULT; }catch(e){ return METAS_DEFAULT; } }
 function saveMetas(m){ localStorage.setItem('crm_metas',JSON.stringify(m)); }
 
@@ -667,11 +637,11 @@ var MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','
 var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfCmHyqGWj2jZqXS_HnZ4gCiOgQ1WYKKQWkwXftYPoSQYFlC7tnIwGByPSvGjicaxCfQ/exec';
 
 var STATE = {
-  usuario: null, screen: 'dashboard', prevScreen: null,
+  usuario: null, screen: 'postos', prevScreen: null,
   weekOffset: 0, agendaDay: null,
-  histFilter: 'todos', tipoReg: 'visita',
-  currentVisitaId: null, currentPostoFil: null,
-  dirRefreshTimer: null, period: 'mes', agendaFilter: 'agendamento', editandoId: null
+  tipoReg: 'visita',
+  currentVisitaId: null, currentPostoFil: null, currentPostoRegional: null,
+  dirRefreshTimer: null, agendaFilter: 'agendamento', editandoId: null
 };
 
 // Postos vêm do localStorage (editável) com fallback nos defaults
@@ -684,7 +654,19 @@ function loadData(){
   var u = STATE.usuario;
   if(!u) return [];
   if(u==='Diretor'){
-    try{ return JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){ return []; }
+    // Mescla com o local (crm_v): sem isso, uma 2ª gravação seguida sem refresh
+    // da nuvem no meio perdia a 1ª do armazenamento local (o dado ainda ia pro
+    // servidor, mas sumia da tela do Diretor até o próximo fetchDadosDiretor()).
+    // Mesmo padrão de merge (local tem prioridade) já usado em loadAllData().
+    var cacheDir = []; var localDir = [];
+    try{ cacheDir = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){}
+    try{ localDir = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
+    var mergedDir = {};
+    cacheDir.forEach(function(x){ if(x.id) mergedDir[x.id]=x; });
+    localDir.forEach(function(x){ if(x.id) mergedDir[x.id]=x; });
+    var resultDir = [];
+    Object.keys(mergedDir).forEach(function(k){ resultDir.push(mergedDir[k]); });
+    return resultDir;
   }
   var h = USERS[u];
   // Gerentes com equipe: lêem cache do Sheets filtrado para sua equipe + dados próprios
@@ -742,6 +724,25 @@ function sincronizarRegional(){
     })
     .catch(function(){ localStorage.setItem('crm_sync_pending','1'); updateSyncPendingBar(); });
 }
+
+// Localização "por último visto": tenta pegar a posição do GPS ao salvar um registro
+// e grava nele (lat/lng). Nunca bloqueia nem atrasa o salvamento — se o usuário negar
+// a permissão, ou o navegador não suportar, simplesmente não grava nada.
+function capturarLocalizacao(visitaId){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var arr = loadData();
+    var idx = arr.findIndex(function(x){ return x.id===visitaId; });
+    if(idx<0) return;
+    arr[idx].lat = pos.coords.latitude;
+    arr[idx].lng = pos.coords.longitude;
+    arr[idx].locEm = Date.now();
+    saveData(arr);
+    sincronizarRegional();
+  }, function(){ /* permissão negada / indisponível — segue sem localização */ },
+  { timeout:8000, maximumAge:60000 });
+}
+
 function updateSyncPendingBar(){
   var bar = document.getElementById('sync-pending-bar'); if(!bar) return;
   if(localStorage.getItem('crm_sync_pending')==='1'){
@@ -826,16 +827,14 @@ function fetchDadosDiretor(onDone){
     });
 }
 
-// Re-renderiza a tela que o usuário está vendo no momento (dashboard, agenda, etc.)
-// Sem isso, um refresh em segundo plano sempre atualizava só o Dashboard,
-// deixando a Agenda "congelada" com dados antigos se o usuário estivesse nela.
+// Re-renderiza a tela que o usuário está vendo no momento (agenda, postos, etc.)
+// Sem isso, um refresh em segundo plano deixava a tela "congelada" com dados
+// antigos se o usuário não estivesse na tela que o sync atualizava.
 function refreshVisibleScreen(){
   switch(STATE.screen){
-    case 'dashboard': renderDashboard(); break;
     case 'agenda': renderWeekAgenda(); break;
-    case 'historico': renderHistorico(); break;
     case 'postos': renderPostos(); break;
-    default: renderDashboard();
+    case 'posto-detail': if(STATE.currentPostoFil!=null) abrirPosto(STATE.currentPostoFil, STATE.currentPostoRegional); break;
   }
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
@@ -843,19 +842,6 @@ function today(){ return localDateStr(new Date()); }
 function fmtDate(d){ if(!d) return '—'; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
 
 function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); },2500); }
-
-// ==================== PERÍODO ====================
-function setPeriod(el){
-  document.querySelectorAll('#period-filter .filter-chip').forEach(function(c){ c.classList.remove('active'); });
-  el.classList.add('active'); STATE.period=el.dataset.p; renderDashboard();
-}
-function filterByPeriod(data){
-  var t=today();
-  if(STATE.period==='hoje') return data.filter(function(v){ return v.data===t; });
-  if(STATE.period==='semana'){ var days=getWeekDates(0); return data.filter(function(v){ return v.data>=days[0]&&v.data<=days[6]; }); }
-  if(STATE.period==='mes'){ var mes=t.slice(0,7); return data.filter(function(v){ return (v.data||'').slice(0,7)===mes; }); }
-  return data;
-}
 
 // ==================== FOTO ====================
 function previewFoto(input){
@@ -915,7 +901,7 @@ function doLogin(user){
   document.getElementById('bottom-nav').classList.remove('hidden');
   document.getElementById('user-badge').textContent = fmtReg(user);
   setupNovaVisita();
-  navTo('dashboard');
+  navTo('postos');
   // Todos os perfis (inclusive regionais) buscam a nuvem, para ver os próprios
   // dados em qualquer aparelho e não só o que foi criado localmente naquele device.
   fetchDadosDiretor();
@@ -963,15 +949,15 @@ function doLogout(){
 }
 
 // ==================== NAV ====================
-var SCREENS = ['dashboard','nova-visita','agenda','postos','historico','posto-detail','visita-detail','config','indicadores'];
-var TITLES = {dashboard:'Início','nova-visita':'Registrar Visita',agenda:'Agenda Semanal',postos:'Postos',historico:'Plano de Ação','posto-detail':'Histórico do Posto','visita-detail':'Detalhe da Visita',config:'Configurações',indicadores:'Indicadores Mensais'};
+var SCREENS = ['nova-visita','agenda','postos','posto-detail','visita-detail','config','indicadores'];
+var TITLES = {'nova-visita':'Registrar Visita',agenda:'Agenda Semanal',postos:'Plano de Ação','posto-detail':'Histórico do Posto','visita-detail':'Detalhe da Visita',config:'Configurações',indicadores:'Indicadores Mensais'};
 
 function showScreen(name){
   SCREENS.forEach(function(s){ document.getElementById('screen-'+s).classList.add('hidden'); });
   document.getElementById('screen-'+name).classList.remove('hidden');
   STATE.screen = name;
   document.getElementById('header-title').textContent = TITLES[name]||name;
-  var hasBack = ['posto-detail','visita-detail','indicadores'].indexOf(name)>=0;
+  var hasBack = ['posto-detail','visita-detail','indicadores','nova-visita'].indexOf(name)>=0;
   document.getElementById('btn-back').classList.toggle('hidden', !hasBack);
 }
 
@@ -982,124 +968,26 @@ function navTo(name, btn){
     document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
   }
-  if(name==='dashboard') renderDashboard();
   if(name==='agenda'){ STATE.agendaDay = today(); renderWeekAgenda(); }
-  if(name==='historico') renderHistorico();
   if(name==='postos') renderPostos();
   if(name==='config') renderConfig();
 }
 
 function goBack(){
-  navTo(STATE.prevScreen||'dashboard');
-  var ps = STATE.prevScreen||'dashboard';
+  var ps = STATE.prevScreen||'postos';
+  navTo(ps);
   document.querySelectorAll('.nav-btn').forEach(function(b){
     b.classList.toggle('active', b.dataset.screen===ps);
   });
 }
 
 // ==================== DASHBOARD ====================
-function renderDashboard(){
-  var data = loadData();
-  var user = STATE.usuario;
-  var visiveisList = visiveisFor(user);
-  // filtra por usuários visíveis (campo usuario novo) ou regional (campo legado)
-  var mine = user==='Diretor' ? data : data.filter(function(v){
-    var u = v.usuario||v.regional;
-    return visiveisList.indexOf(u)>=0;
-  });
-  mine = filterByPeriod(mine);
-  var realiz = mine.filter(function(v){ return v.tipo==='visita'; });
-  var agend = mine.filter(function(v){ return v.tipo==='agendamento'; });
-  var pends = [];
-  mine.forEach(function(v){
-    (v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).forEach(function(d){
-      pends.push({d:d,v:v});
-    });
-  });
-  var postos_vis = {};
-  mine.forEach(function(v){ postos_vis[v.postoFil]=1; });
-
-  // Barra de sync para Diretor e gerentes com equipe
-  var h = USERS[user];
-  var temEquipe = user==='Diretor' || (h&&h.equipe&&h.equipe.length);
-  var syncBar = document.getElementById('dir-sync-bar');
-  if(temEquipe){
-    if(!syncBar){
-      syncBar = document.createElement('div');
-      syncBar.id = 'dir-sync-bar';
-      syncBar.style.cssText = 'display:flex;align-items:center;gap:8px;background:#e8f5e9;border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:12px;color:var(--verde2)';
-      syncBar.innerHTML = '<span style="flex:1" id="dir-sync-status">🔄 Buscando dados da equipe...</span>'+
-        '<button onclick="fetchDadosDiretor()" style="background:var(--verde);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">↻ Atualizar</button>';
-      document.getElementById('screen-dashboard').insertBefore(syncBar, document.getElementById('screen-dashboard').firstChild);
-    }
-  } else if(syncBar){ syncBar.remove(); }
-
-  // Um card individual por pessoa da equipe: status (última visita/pendências) + mini agenda da semana
-  var cardsWrap = document.getElementById('cards-equipe-individual');
-  if(temEquipe){
-    var membros = user==='Diretor' ? visiveisFor('Diretor') : (h.equipe||[]);
-    var todosDados = loadData();
-    // Janela rolante dos próximos 7 dias (hoje + 6), não a semana-calendário —
-    // assim nunca mostra dias que já passaram, não importa em que dia da semana se acesse.
-    var semanaAtual = (function(){
-      var arr=[]; var base=new Date();
-      for(var i=0;i<7;i++){ var d=new Date(base); d.setDate(base.getDate()+i); arr.push(localDateStr(d)); }
-      return arr;
-    })();
-    var DIAS_ABREV_SEM = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
-    var hojeStr = today();
-    cardsWrap.innerHTML = membros.map(function(m){
-      var cor = corUser(m);
-      var visitasM = todosDados.filter(function(v){ return (v.usuario||v.regional)===m && v.tipo==='visita'; }).sort(function(a,b){ return b.criadoEm-a.criadoEm; });
-      var ultimaV = visitasM[0];
-      var pendCount = 0;
-      todosDados.filter(function(v){ return (v.usuario||v.regional)===m; }).forEach(function(v){
-        pendCount += (v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length;
-      });
-      var proxAg = todosDados.filter(function(v){ return (v.usuario||v.regional)===m && v.tipo==='agendamento' && v.data>=today(); }).sort(function(a,b){ return a.data.localeCompare(b.data); })[0];
-      var sub = ultimaV ? ('Última: '+ultimaV.postoNome+' · '+fmtDate(ultimaV.data)) : 'Sem visitas registradas';
-      if(proxAg) sub += ' · Próx: '+fmtDate(proxAg.data);
-
-      var doUsuario = todosDados.filter(function(v){ return (v.usuario||v.regional)===m && v.data>=semanaAtual[0] && v.data<=semanaAtual[6]; });
-      var porDia = {};
-      doUsuario.forEach(function(v){ porDia[v.data]=(porDia[v.data]||0)+1; });
-      var dias = semanaAtual.map(function(dt){
-        var n = porDia[dt]||0;
-        var cls = 'ma-day'+(dt===hojeStr?' today':'');
-        var bg = n>0?cor:'#f0f0f0';
-        var fg = n>0?'#fff':'var(--txt2)';
-        var lbl = DIAS_ABREV_SEM[parseDateLocal(dt).getDay()];
-        return '<div class="'+cls+'" style="background:'+bg+'" title="'+fmtDate(dt)+' — '+n+' registro(s)">'+
-          '<span class="ma-lbl" style="color:'+fg+'">'+lbl+'</span>'+
-          '<span class="ma-num" style="color:'+fg+'">'+(n>0?n:'')+'</span></div>';
-      }).join('');
-      var ordenado = doUsuario.slice().sort(function(a,b){ return a.data.localeCompare(b.data)||((a.hora||'').localeCompare(b.hora||'')); });
-      var itensHTML = ordenado.slice(0,6).map(function(v){
-        var isAgend = v.tipo==='agendamento';
-        return '<div class="ma-item" onclick="abrirVisita(\''+v.id+'\')">'+
-          '<span class="ma-item-date">'+fmtDate(v.data)+(v.hora?' '+v.hora:'')+'</span>'+
-          '<span class="ma-item-posto">'+v.postoNome+'</span>'+
-          '<span class="badge '+(isAgend?'badge-agendada':'badge-ok')+'" style="margin-left:auto">'+(isAgend?'Agend.':'Realizada')+'</span></div>';
-      }).join('');
-      if(ordenado.length>6) itensHTML += '<div class="ma-item-mais">+'+(ordenado.length-6)+' mais</div>';
-
-      return '<div class="card card-membro">'+
-        '<div class="membro-header" onclick="irParaHistoricoDe(\''+m+'\')">'+
-        '<div class="list-icon" style="background:'+cor+'22;color:'+cor+'">'+fmtReg(m)[0]+'</div>'+
-        '<div class="list-body"><div class="list-title" style="color:'+cor+'">'+fmtReg(m)+'</div>'+
-        '<div class="list-sub">'+sub+'</div></div>'+
-        (pendCount>0?'<span class="badge badge-pendente">'+pendCount+' pend.</span>':'<span class="badge badge-ok">OK</span>')+
-        '</div>'+
-        '<div class="mini-agenda-strip">'+dias+'</div>'+
-        (itensHTML?'<div class="mini-agenda-items">'+itensHTML+'</div>':'')+
-        '</div>';
-    }).join('');
-  } else {
-    cardsWrap.innerHTML = '';
-  }
-
-  // Lembrete: postos sem nenhuma visita realizada (de qualquer usuário) nos últimos 30 dias
+// Lembrete: postos sem nenhuma visita realizada (de qualquer usuário) nos últimos 30 dias.
+// Chamada a partir de renderPostos() — mostra o card no topo da lista de postos.
+function renderPostosSemVisita(){
   var cardSemVisita = document.getElementById('card-postos-sem-visita');
+  var user = STATE.usuario;
+  var h = USERS[user];
   var escopoPostos = [];
   if(user==='Diretor'){
     Object.keys(POSTOS).forEach(function(k){ (POSTOS[k]||[]).forEach(function(p){ escopoPostos.push({reg:k,nome:p.nome,fil:p.fil}); }); });
@@ -1122,7 +1010,7 @@ function renderDashboard(){
     vistosFil[key] = true;
     var ultima = ultimaPorPosto[key];
     return !ultima || ultima < cutoff30;
-  }).map(function(p){ return {nome:p.nome, reg:p.reg, ultima:ultimaPorPosto[String(p.fil)]||null}; })
+  }).map(function(p){ return {nome:p.nome, reg:p.reg, fil:p.fil, ultima:ultimaPorPosto[String(p.fil)]||null}; })
     .sort(function(a,b){
       if(!a.ultima && !b.ultima) return a.nome.localeCompare(b.nome);
       if(!a.ultima) return -1;
@@ -1133,77 +1021,13 @@ function renderDashboard(){
     cardSemVisita.classList.remove('hidden');
     document.getElementById('list-postos-sem-visita').innerHTML = semVisita.map(function(p){
       var sub = p.ultima ? ('Última visita: '+fmtDate(p.ultima)) : 'Nunca visitado';
-      return '<div class="list-item" onclick="irParaHistoricoDe(\''+p.reg+'\')">'+
+      return '<div class="list-item" onclick="abrirPosto('+p.fil+',\''+p.reg+'\')">'+
         '<div class="list-icon" style="background:#ffebee;color:var(--vermelho)">🚨</div>'+
         '<div class="list-body"><div class="list-title">'+p.nome+'</div>'+
         '<div class="list-sub">'+fmtReg(p.reg)+' · '+sub+'</div></div></div>';
     }).join('');
   } else {
     cardSemVisita.classList.add('hidden');
-  }
-
-  var metaHTML='';
-  if(user!=='Diretor'){
-    var metas=loadMetas(); var meta=metas[user]||0;
-    if(meta){
-      var mesAtualDash=today().slice(0,7);
-      var realizMes=loadData().filter(function(v){ return (v.usuario||v.regional)===user&&v.tipo==='visita'&&(v.data||'').slice(0,7)===mesAtualDash; }).length;
-      var pctMeta=Math.min(100,Math.round(realizMes/meta*100));
-      var corMeta=pctMeta>=100?'var(--verde)':pctMeta>=60?'var(--azul)':'var(--laranja)';
-      metaHTML='<div class="stat-card" style="grid-column:1/-1;text-align:left">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center">'+
-        '<span class="stat-label">🎯 Meta mensal de visitas</span>'+
-        '<span style="font-size:14px;font-weight:800;color:'+corMeta+'">'+realizMes+'/'+meta+'</span></div>'+
-        '<div class="meta-bar-bg"><div class="meta-bar-fill" style="width:'+pctMeta+'%;background:'+corMeta+'"></div></div></div>';
-    }
-  }
-  document.getElementById('dash-stats').innerHTML =
-    '<div class="stat-card"><div class="stat-num" style="color:var(--verde)">'+realiz.length+'</div><div class="stat-label">Visitas</div></div>'+
-    '<div class="stat-card"><div class="stat-num" style="color:var(--roxo)">'+agend.length+'</div><div class="stat-label">Agendamentos</div></div>'+
-    '<div class="stat-card"><div class="stat-num" style="color:var(--laranja)">'+pends.length+'</div><div class="stat-label">Pendências</div></div>'+
-    '<div class="stat-card"><div class="stat-num" style="color:var(--azul)">'+Object.keys(postos_vis).length+'</div><div class="stat-label">Postos Visitados</div></div>'+
-    metaHTML;
-
-  var lp = document.getElementById('list-pend');
-  if(!pends.length){ lp.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Sem pendências!</p></div>'; }
-  else {
-    lp.innerHTML = pends.slice(0,5).map(function(x){
-      return '<div class="list-item" onclick="abrirVisita(\''+x.v.id+'\')">'+
-        '<div class="list-icon" style="background:#fff3e0">⚠️</div>'+
-        '<div class="list-body"><div class="list-title">'+x.d.desc+'</div>'+
-        '<div class="list-sub">'+x.v.postoNome+' · '+fmtReg(x.v.usuario||x.v.regional)+' · '+fmtDate(x.v.data)+'</div></div>'+
-        '<span class="badge badge-pendente">Pendente</span></div>';
-    }).join('');
-  }
-
-  // Próximas = qualquer tipo com data >= hoje, ordenado por data
-  var prox = mine.filter(function(v){ return v.data>=today(); }).sort(function(a,b){ return a.data.localeCompare(b.data)||((a.hora||'').localeCompare(b.hora||'')); });
-  var lpr = document.getElementById('list-prox');
-  if(!prox.length){ lpr.innerHTML='<div style="text-align:center;color:var(--txt2);font-size:13px;padding:16px">Nenhuma visita futura</div>'; }
-  else {
-    lpr.innerHTML = prox.slice(0,5).map(function(v){
-      var isAgend = v.tipo==='agendamento';
-      return '<div class="list-item" onclick="abrirVisita(\''+v.id+'\')">'+
-        '<div class="list-icon" style="background:'+(isAgend?'#f3e5f5':'var(--verde-light)')+'">'+(isAgend?'📅':'✅')+'</div>'+
-        '<div class="list-body"><div class="list-title">'+v.postoNome+'</div>'+
-        '<div class="list-sub">'+fmtReg(v.usuario||v.regional)+' · '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+'</div></div>'+
-        '<span class="badge '+(isAgend?'badge-agendada':'badge-ok')+'">'+(isAgend?'Agend.':fmtDate(v.data))+'</span></div>';
-    }).join('');
-  }
-
-  // Últimas = qualquer tipo com data < hoje, ordenado por mais recente
-  var rec = mine.filter(function(v){ return v.data<today(); }).sort(function(a,b){ return b.criadoEm-a.criadoEm; });
-  var lr = document.getElementById('list-rec');
-  if(!rec.length){ lr.innerHTML='<div style="text-align:center;color:var(--txt2);font-size:13px;padding:16px">Nenhuma visita anterior</div>'; }
-  else {
-    lr.innerHTML = rec.slice(0,5).map(function(v){
-      var np = (v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length;
-      return '<div class="list-item" onclick="abrirVisita(\''+v.id+'\')">'+
-        '<div class="list-icon" style="background:'+corUser(v.usuario||v.regional)+'22;color:'+corUser(v.usuario||v.regional)+';font-size:15px">'+fmtReg(v.usuario||v.regional)[0]+'</div>'+
-        '<div class="list-body"><div class="list-title">'+v.postoNome+'</div>'+
-        '<div class="list-sub">'+fmtReg(v.usuario||v.regional)+' · '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+'</div></div>'+
-        '<span class="badge '+(np>0?'badge-pendente':'badge-ok')+'">'+(np>0?np+' pend.':'OK')+'</span></div>';
-    }).join('');
   }
 }
 
@@ -1279,7 +1103,6 @@ function editarAgendamento(id){
   lista.innerHTML = '';
   (v.demandas||[]).forEach(function(d){ addDemanda(d.desc, d.cat, d.status); });
   navTo('nova-visita');
-  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='nova-visita'); });
   carregarHistoricoDemandas(v.postoFil, v.regional||v.usuario, id);
 }
 
@@ -1542,6 +1365,7 @@ function salvarVisita(){
   }
   saveData(arr);
   sincronizarRegional();
+  capturarLocalizacao(v.id); // best-effort, em segundo plano — não atrasa nem trava o salvamento
   setupNovaVisita();
 
   // Agendamento: vai direto para a agenda na semana/dia correto
@@ -1562,9 +1386,13 @@ function salvarVisita(){
     navTo('agenda');
     document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='agenda'); });
     renderWeekAgenda();
+  } else if(v.postoFil>0){
+    // Visita realizada a um posto real: volta pro Plano de Ação daquele posto, já atualizado
+    abrirPosto(v.postoFil, v.regional);
   } else {
-    navTo('dashboard');
-    document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='dashboard'); });
+    // REUNIÃO MATRIZ / local livre: não tem posto pra voltar, mostra a lista
+    navTo('postos');
+    document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='postos'); });
   }
 }
 
@@ -1744,7 +1572,6 @@ function confirmarVisita(id, ev){
 
   STATE.agendamentoOrigemId = id;
   navTo('nova-visita');
-  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='nova-visita'); });
 
   setTimeout(function(){
     document.getElementById('reg-regional').value = v.regional;
@@ -1828,165 +1655,9 @@ function exportarSemanaWhatsApp(){
   }
 }
 
-// ==================== HISTÓRICO / PLANO DE AÇÃO ====================
-var histFilter = 'todos';
-if(!STATE.histMode) STATE.histMode = 'posto';
-
-function setHistMode(mode){
-  STATE.histMode = mode;
-  document.querySelectorAll('#hist-mode-toggle .filter-chip').forEach(function(c){ c.classList.toggle('active', c.dataset.mode===mode); });
-  document.getElementById('hist-filters').classList.toggle('hidden', mode!=='usuario');
-  document.getElementById('plano-regiao-filter').classList.toggle('hidden', mode!=='posto');
-  document.getElementById('hist-search').placeholder = mode==='posto' ? 'Buscar posto...' : 'Buscar posto, regional...';
-  renderHistorico();
-}
-
-function setPlanoRegiao(el){
-  document.querySelectorAll('#plano-regiao-filter .filter-chip').forEach(function(c){ c.classList.remove('active'); });
-  el.classList.add('active');
-  STATE.planoRegiao = el.dataset.r;
-  renderHistorico();
-}
-
-function irParaHistoricoDe(u){
-  navTo('historico');
-  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='historico'); });
-  setTimeout(function(){
-    setHistMode('usuario');
-    var chip = document.querySelector('#hist-filters [data-f="'+u+'"]');
-    if(chip){
-      document.querySelectorAll('#hist-filters .filter-chip').forEach(function(c){ c.classList.remove('active'); });
-      chip.classList.add('active');
-      histFilter = u;
-      renderHistorico();
-    }
-  }, 50);
-}
-function setHistFilter(el){
-  document.querySelectorAll('#hist-filters .filter-chip').forEach(function(c){ c.classList.remove('active'); });
-  el.classList.add('active');
-  histFilter = el.dataset.f;
-  renderHistorico();
-}
-
-function renderHistorico(){
-  if(STATE.histMode==='usuario') renderHistoricoPorUsuario();
-  else renderPlanoAcaoGeral();
-}
-
-// Plano de Ação: lista recolhida de todos os postos visíveis com demanda registrada, filtrável
-// por região (chips) e busca por nome. Tocar um posto abre o plano completo dele (abrirPosto).
-function renderPlanoAcaoGeral(){
-  var user = STATE.usuario;
-  var visiveisList = visiveisFor(user);
-  var search = ((document.getElementById('hist-search')||{}).value||'').toLowerCase();
-  var regs = user==='Diretor' ? Object.keys(POSTOS) : visiveisList.filter(function(u){ return POSTOS[u]; });
-
-  // Filtro de região — construído uma vez por usuário
-  var regFiltEl = document.getElementById('plano-regiao-filter');
-  if(!regFiltEl.dataset.user || regFiltEl.dataset.user !== user){
-    regFiltEl.dataset.user = user;
-    regFiltEl.innerHTML = '<div class="filter-chip active" data-r="todos" onclick="setPlanoRegiao(this)">Todas as regiões</div>'+
-      regs.map(function(r){ return '<div class="filter-chip" data-r="'+r+'" onclick="setPlanoRegiao(this)">'+fmtReg(r)+'</div>'; }).join('');
-    STATE.planoRegiao = 'todos';
-  }
-  var regiaoSel = STATE.planoRegiao || 'todos';
-  var regsFiltrados = (regiaoSel==='todos') ? regs : [regiaoSel];
-
-  var todos = [];
-  regsFiltrados.forEach(function(r){ (POSTOS[r]||[]).forEach(function(p){ todos.push({nome:p.nome,fil:p.fil,regional:r}); }); });
-  if(search) todos = todos.filter(function(p){ return p.nome.toLowerCase().includes(search)||fmtReg(p.regional).toLowerCase().includes(search); });
-
-  var dadosTodos = loadAllData();
-  var comPlano = todos.map(function(p){
-    var vis = dadosTodos.filter(function(v){ return v.postoFil===p.fil && (v.demandas||[]).length>0; });
-    var totalDems = vis.reduce(function(s,v){ return s+(v.demandas||[]).length; },0);
-    var pendCount = vis.reduce(function(s,v){ return s+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
-    return {posto:p, totalVisitas:vis.length, totalDems:totalDems, pendCount:pendCount};
-  }).filter(function(x){ return x.totalVisitas>0; });
-
-  // Postos com pendências primeiro, depois por quantidade de demandas
-  comPlano.sort(function(a,b){
-    if(b.pendCount!==a.pendCount) return b.pendCount-a.pendCount;
-    return b.totalDems-a.totalDems;
-  });
-
-  var list = document.getElementById('hist-list');
-  if(!comPlano.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhum posto com demandas registradas</p></div>'; return; }
-  list.innerHTML = comPlano.map(function(x){
-    var cor = CORES[x.posto.regional];
-    return '<div class="posto-card" onclick="abrirPosto('+x.posto.fil+',\''+x.posto.regional+'\')">'+
-      '<div class="posto-num" style="background:'+cor+'22;color:'+cor+'">'+x.posto.fil+'</div>'+
-      '<div style="flex:1;min-width:0">'+
-      '<div class="posto-name">'+x.posto.nome+'</div>'+
-      '<div class="posto-meta">'+fmtReg(x.posto.regional)+' · '+x.totalDems+' demanda(s) em '+x.totalVisitas+' visita(s)</div>'+
-      '</div>'+
-      (x.pendCount>0?'<span class="badge badge-pendente">'+x.pendCount+' pend.</span>':'<span class="badge badge-ok">OK</span>')+
-      '</div>';
-  }).join('');
-}
-
-function renderHistoricoPorUsuario(){
-  var user = STATE.usuario;
-  var visiveisList = visiveisFor(user);
-
-  // Monta filtros dinâmicos na primeira vez ou quando usuário muda
-  var filtersEl = document.getElementById('hist-filters');
-  if(!filtersEl.dataset.user || filtersEl.dataset.user !== user){
-    filtersEl.dataset.user = user;
-    var chips = '<div class="filter-chip active" data-f="todos" onclick="setHistFilter(this)">Todos</div>';
-    if(visiveisList.length > 1){
-      visiveisList.forEach(function(u){
-        chips += '<div class="filter-chip" data-f="'+u+'" onclick="setHistFilter(this)">'+fmtReg(u)+'</div>';
-      });
-    }
-    chips += '<div class="filter-chip" data-f="pendente" onclick="setHistFilter(this)">⚠️ Pendentes</div>';
-    filtersEl.innerHTML = chips;
-    histFilter = 'todos';
-  }
-
-  var search = (document.getElementById('hist-search')||{}).value||'';
-  search = search.toLowerCase();
-  var data = loadData();
-
-  // Filtra por visibilidade
-  data = data.filter(function(v){
-    var u = v.usuario||v.regional;
-    return user==='Diretor' || visiveisList.indexOf(u)>=0;
-  });
-  if(histFilter&&histFilter!=='todos'&&histFilter!=='pendente'){
-    data = data.filter(function(v){ return (v.usuario||v.regional)===histFilter; });
-  }
-  if(histFilter==='pendente') data = data.filter(function(v){ return (v.demandas||[]).some(function(d){ return d.status==='pendente'; }); });
-  if(search) data = data.filter(function(v){
-    var u = fmtReg(v.usuario||v.regional).toLowerCase();
-    return v.postoNome.toLowerCase().includes(search)||u.includes(search)||(v.obs||'').toLowerCase().includes(search);
-  });
-  data.sort(function(a,b){ return b.criadoEm-a.criadoEm; });
-  var list = document.getElementById('hist-list');
-  if(!data.length){ list.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><p>Nenhum registro</p></div>'; return; }
-  list.innerHTML = data.map(function(v){
-    var np = (v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length;
-    var uKey = v.usuario||v.regional;
-    var cor = corUser(uKey);
-    return '<div class="card" onclick="abrirVisita(\''+v.id+'\')" style="cursor:pointer;margin-bottom:10px">'+
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
-      '<div style="width:36px;height:36px;border-radius:8px;background:'+cor+'22;display:flex;align-items:center;justify-content:center;font-weight:800;color:'+cor+'">'+fmtReg(uKey)[0]+'</div>'+
-      '<div style="flex:1;min-width:0">'+
-      '<div style="font-weight:700;font-size:14px">'+v.postoNome+'</div>'+
-      '<div style="font-size:12px;color:var(--txt2)">'+fmtReg(uKey)+' · '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+'</div>'+
-      '</div>'+
-      '<span class="badge '+(v.tipo==='agendamento'?'badge-agendada':(np>0?'badge-pendente':'badge-ok'))+'">'+
-      (v.tipo==='agendamento'?'Agend.':(np>0?np+' pend.':'OK'))+'</span>'+
-      '</div>'+
-      ((v.demandas||[]).length?'<div style="font-size:12px;color:var(--txt2)">'+(v.demandas||[]).length+' demanda(s)'+(np>0?' · <span style="color:var(--laranja)">'+np+' pendente(s)</span>':'')+'</div>':'')+
-      (v.obs?'<div style="font-size:12px;color:var(--txt2);margin-top:4px;font-style:italic">'+v.obs.slice(0,80)+'</div>':'')+
-      '</div>';
-  }).join('');
-}
-
 // ==================== POSTOS ====================
 function renderPostos(){
+  renderPostosSemVisita();
   var search = ((document.getElementById('postos-search')||{}).value||'').toLowerCase();
   var user = STATE.usuario;
   var data = loadData();
@@ -2014,6 +1685,7 @@ function renderPostos(){
 
 function abrirPosto(fil, regional){
   STATE.currentPostoFil = fil;
+  STATE.currentPostoRegional = regional;
   STATE.prevScreen = STATE.screen;
   showScreen('posto-detail');
   var posto = (POSTOS[regional]||[]).find(function(p){ return p.fil===fil; });
@@ -2030,7 +1702,8 @@ function abrirPosto(fil, regional){
     '<div style="background:var(--verde-light);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--verde)">'+data.length+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">VISITAS</div></div>'+
     '<div style="background:#fff3e0;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--laranja)">'+totalPend+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">PENDENTES</div></div>'+
     '<div style="background:var(--cinza2);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--cinza)">'+totalDems+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">DEMANDAS</div></div>'+
-    '</div>';
+    '</div>'+
+    (fil>0 ? '<button class="btn btn-primary btn-full btn-sm" onclick="iniciarVisitaPosto('+fil+',\''+regional+'\')" style="margin-top:12px">➕ Nova Visita neste Posto</button>' : '');
 
   var cardPlano = document.getElementById('card-pd-plano');
   var rPlano = planoAcaoHTML(fil, null);
@@ -2055,6 +1728,18 @@ function abrirPosto(fil, regional){
       '<span class="badge '+(v.tipo==='agendamento'?'badge-agendada':(np>0?'badge-pendente':'badge-ok'))+'">'+
       (v.tipo==='agendamento'?'Agend.':(np>0?np+' pend.':'OK'))+'</span></div>';
   }).join('');
+}
+
+// Atalho "+ Nova Visita" dentro do Posto: abre o formulário já com o posto certo escolhido.
+function iniciarVisitaPosto(fil, regional){
+  setupNovaVisita();
+  var h = USERS[STATE.usuario];
+  var podeSelReg = STATE.usuario==='Diretor' || (h && h.equipe && h.equipe.some(function(u){ return POSTOS[u]; }));
+  if(podeSelReg) document.getElementById('reg-regional').value = regional;
+  atualizarPostos();
+  document.getElementById('reg-posto').value = regional+'|'+fil;
+  onPostoChanged();
+  navTo('nova-visita');
 }
 
 // ==================== VISITA DETALHE ====================
@@ -2180,6 +1865,12 @@ function renderConfig(){
         var lastSync=localStorage.getItem('crm_last_sync_'+u);
         var syncStr=lastSync?'📶 '+new Date(parseInt(lastSync)).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'📶 Nunca sincronizou';
         var visHoje=mine.filter(function(v){ return v.data===today()&&v.tipo==='visita'; }).length;
+        // Última localização conhecida: do registro mais recente que tenha lat/lng capturado
+        var comLoc = mine.filter(function(v){ return v.lat!=null && v.lng!=null; })
+          .sort(function(a,b){ return (b.locEm||b.criadoEm)-(a.locEm||a.criadoEm); })[0];
+        var locStr = comLoc
+          ? '📍 <a href="https://www.google.com/maps?q='+comLoc.lat+','+comLoc.lng+'" target="_blank" rel="noopener" style="color:var(--azul);font-weight:700;text-decoration:none">Última localização</a> · '+new Date(comLoc.locEm||comLoc.criadoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+          : '📍 Sem localização registrada';
         return '<div class="reg-import-card">'+
           '<div class="reg-import-av" style="background:'+(h.cor||'#607d8b')+'">'+(h.inicial||u[0])+'</div>'+
           '<div class="reg-import-body">'+
@@ -2187,6 +1878,7 @@ function renderConfig(){
           '<div style="font-size:11px;color:var(--txt2);margin-bottom:2px">'+(h.role||'')+'</div>'+
           '<div class="reg-import-meta">'+mine.length+' visita(s) · '+np+' pendência(s)'+(visHoje?' · <span style="color:var(--verde);font-weight:700">'+visHoje+' hoje</span>':'')+'</div>'+
           '<div style="font-size:10px;color:var(--cinza3);margin-top:3px">'+syncStr+'</div>'+
+          '<div style="font-size:10px;color:var(--cinza3);margin-top:2px">'+locStr+'</div>'+
           '</div></div>';
       }).join('')+'</div>';
     // Metas mensais
@@ -2437,7 +2129,7 @@ function importarJSON(ev){
 function exportarPDF(){
   var user=STATE.usuario;
   document.getElementById('print-meta').textContent=
-    'Gerado em '+new Date().toLocaleString('pt-BR')+' · '+fmtReg(user)+' · período: '+STATE.period;
+    'Gerado em '+new Date().toLocaleString('pt-BR')+' · '+fmtReg(user);
   window.print();
 }
 
@@ -2457,7 +2149,7 @@ function fetchMetasServidor(){
         var metas = Object.assign({}, METAS_DEFAULT, json.metas);
         Object.keys(metas).forEach(function(k){ if(metas[k]<25) metas[k]=25; });
         saveMetas(metas);
-        renderDashboard();
+        refreshVisibleScreen();
       }
     })
     .catch(function(){});
