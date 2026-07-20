@@ -14,38 +14,43 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --verde:#1b5e20;--verde2:#2e7d32;--verde3:#43a047;--verde-light:#e8f5e9;
+  --verde:#1b5e20;--verde2:#2e7d32;--verde3:#43a047;--verde-light:#e8f5e9;--verde-deep:#0f3d12;
   --cinza:#607d8b;--cinza2:#eceff1;--cinza3:#b0bec5;
   --laranja:#e65100;--azul:#1565c0;--vermelho:#b71c1c;--roxo:#6a1b9a;
   --txt:#212121;--txt2:#546e7a;
-  --radius:12px;--shadow:0 2px 12px rgba(0,0,0,.12);
+  --radius:16px;--shadow:0 3px 14px rgba(25,45,35,.10);--shadow-lg:0 10px 28px rgba(15,35,25,.16);
 }
-body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-height:100vh;padding-bottom:72px}
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0,#e7edf0 55%,#eef4f0);color:var(--txt);min-height:100vh;padding-bottom:76px}
 .hidden{display:none!important}
 
 /* HEADER */
-.header{position:sticky;top:0;z-index:100;background:var(--verde);color:#fff;padding:13px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.header h1{font-size:16px;font-weight:600;flex:1}
-.header .user-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;white-space:nowrap}
+.header{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,var(--verde3),var(--verde));color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px rgba(15,40,20,.28)}
+.header h1{font-size:16px;font-weight:700;flex:1;letter-spacing:.2px}
+.header .user-badge{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:5px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 6px rgba(0,0,0,.12)}
 .btn-back{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
 
 /* BOTTOM NAV */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #e0e0e0;display:flex;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
-.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;border:none;background:none;color:var(--txt2);font-size:10px;gap:3px;cursor:pointer;transition:color .15s}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #eceff1;display:flex;box-shadow:0 -4px 18px rgba(0,0,0,.08)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 4px;border:none;background:none;color:var(--txt2);font-size:10px;font-weight:600;gap:2px;cursor:pointer;transition:color .15s}
 .nav-btn.active{color:var(--verde)}
-.nav-btn svg{width:22px;height:22px;stroke-width:1.8}
+.nav-btn svg{width:22px;height:22px;stroke-width:1.8;box-sizing:content-box;padding:4px;border-radius:11px;transition:all .15s}
+.nav-btn.active svg{background:var(--verde-light);box-shadow:0 2px 0 #c8e6c9,inset 0 1px 0 rgba(255,255,255,.6)}
 
 /* CARDS */
 .card{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
 .card-title{font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
 
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:var(--radius);border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
-.btn-primary{background:var(--verde);color:#fff}.btn-primary:active{background:var(--verde2)}
-.btn-secondary{background:var(--verde-light);color:var(--verde)}
-.btn-danger{background:#ffebee;color:var(--vermelho)}
+/* BUTTONS — estilo 3D "pressionável": face + "lábio" mais escuro embaixo que some ao clicar */
+.btn{--lip:0 4px 0 var(--verde-deep);--lipA:0 1px 0 var(--verde-deep);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:var(--radius);border:none;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--lip),0 6px 14px rgba(15,40,20,.2);transition:transform .08s ease,box-shadow .08s ease}
+.btn:active{transform:translateY(3px);box-shadow:var(--lipA),0 2px 6px rgba(15,40,20,.16)}
+.btn-primary{background:linear-gradient(180deg,var(--verde3),var(--verde2));color:#fff}
+.btn-secondary{background:linear-gradient(180deg,#fff,var(--verde-light));color:var(--verde);--lip:0 4px 0 #bfe0c2;--lipA:0 1px 0 #bfe0c2}
+.btn-danger{background:linear-gradient(180deg,#fff,#ffebee);color:var(--vermelho);--lip:0 4px 0 #ffb4bb;--lipA:0 1px 0 #ffb4bb}
 .btn-full{width:100%}
-.btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
+.btn-sm{padding:8px 14px;font-size:12.5px;border-radius:11px;--lip:0 3px 0 var(--verde-deep);--lipA:0 1px 0 var(--verde-deep)}
+.btn-sm.btn-secondary{--lip:0 3px 0 #bfe0c2;--lipA:0 1px 0 #bfe0c2}
+.btn-sm.btn-danger{--lip:0 3px 0 #ffb4bb;--lipA:0 1px 0 #ffb4bb}
+.btn-sm:active{transform:translateY(2px)}
 
 /* FORM */
 .form-group{margin-bottom:14px}
@@ -57,7 +62,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 /* CHIPS */
 .chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .chip{padding:6px 14px;border-radius:20px;border:1.5px solid #ddd;font-size:12px;cursor:pointer;background:#fff;color:var(--txt2);transition:all .15s;font-weight:500}
-.chip.sel{border-color:var(--verde);background:var(--verde-light);color:var(--verde);font-weight:700}
+.chip.sel{border-color:var(--verde);background:var(--verde-light);color:var(--verde);font-weight:700;box-shadow:0 2px 6px rgba(27,94,32,.18)}
 
 /* BADGES */
 .badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
@@ -103,18 +108,18 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 .filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
 .filter-row::-webkit-scrollbar{display:none}
 .filter-chip{white-space:nowrap;padding:6px 14px;border-radius:20px;border:1.5px solid #ddd;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--txt2);flex-shrink:0;transition:all .15s}
-.filter-chip.active{background:var(--verde);color:#fff;border-color:var(--verde)}
+.filter-chip.active{background:linear-gradient(180deg,var(--verde3),var(--verde2));color:#fff;border-color:var(--verde2);box-shadow:0 2px 0 var(--verde-deep),0 3px 8px rgba(15,40,20,.2)}
 
 /* POSTO CARD */
 .posto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:9px}
 @media(max-width:480px){.posto-grid{grid-template-columns:repeat(2,1fr)}}
-.posto-card{background:#fff;border-radius:var(--radius);padding:9px 8px;box-shadow:var(--shadow);cursor:pointer;transition:transform .1s}
-.posto-card:active{transform:scale(.98)}
+.posto-card{background:#fff;border-radius:var(--radius);padding:9px 8px;box-shadow:var(--shadow);cursor:pointer;transition:transform .1s,box-shadow .1s}
+.posto-card:active{transform:scale(.97) translateY(1px);box-shadow:0 1px 4px rgba(0,0,0,.1)}
 .posto-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .posto-num{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0}
 .posto-name{font-weight:600;font-size:12px;line-height:1.25}
 .posto-meta{font-size:11px;color:var(--txt2);margin-top:3px}
-.posto-card-alert{background:#ffebee;box-shadow:0 0 0 1.5px var(--vermelho) inset}
+.posto-card-alert{background:#ffebee;box-shadow:var(--shadow),0 0 0 1.5px var(--vermelho) inset}
 .posto-card-alert .posto-meta{color:var(--vermelho)}
 .posto-alert-tag{font-size:9px;font-weight:800;color:#fff;background:var(--vermelho);border-radius:5px;padding:2px 5px;margin-top:5px;display:inline-block;line-height:1.3}
 
@@ -134,8 +139,8 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 .week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .week-nav-title{font-size:15px;font-weight:700;color:var(--txt)}
 .week-strip{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 10px;margin-bottom:8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
-.week-day{flex:0 0 176px;display:flex;flex-direction:column;background:#fafafa;border-radius:14px;padding:10px;scroll-snap-align:start}
-.week-day.today{background:var(--verde-light)}
+.week-day{flex:0 0 176px;display:flex;flex-direction:column;background:#fff;border-radius:16px;padding:10px;scroll-snap-align:start;box-shadow:var(--shadow)}
+.week-day.today{background:linear-gradient(180deg,#fff,var(--verde-light))}
 .week-day .wd-head{text-align:center;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.06)}
 .week-day .wd-label{font-size:10px;font-weight:600;color:var(--txt2);text-transform:uppercase}
 .week-day .wd-num{font-size:17px;font-weight:700;margin-top:1px}
@@ -181,22 +186,42 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 .vd-prox{background:#f3e5f5;border-radius:10px;padding:12px;font-size:13px;color:var(--roxo);font-weight:600;margin-bottom:12px}
 
 /* LOGIN */
-.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 28px 48px;background:var(--verde);overflow-y:auto}
-.login-logo{font-size:52px;margin-bottom:14px}
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 28px 48px;background:linear-gradient(165deg,var(--verde3) 0%,var(--verde) 55%,var(--verde-deep) 100%);overflow-y:auto}
+.login-logo{font-size:52px;margin-bottom:14px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.25))}
 .login-title{color:#fff;font-size:22px;font-weight:800;margin-bottom:4px;text-align:center}
 .login-sub{color:rgba(255,255,255,.75);font-size:14px;margin-bottom:32px;text-align:center}
 .login-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:340px}
-.login-btn{background:#fff;border:none;border-radius:var(--radius);padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .12s,box-shadow .12s;box-shadow:0 2px 10px rgba(0,0,0,.15)}
-.login-btn:active{transform:scale(.97)}
-.login-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff}
+.login-btn{background:linear-gradient(180deg,#fff,#f3f7f4);border:none;border-radius:var(--radius);padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;box-shadow:0 5px 0 #c3d6c4,0 9px 18px rgba(0,0,0,.24);transition:transform .1s ease,box-shadow .1s ease}
+.login-btn:active{transform:translateY(4px);box-shadow:0 1px 0 #c3d6c4,0 3px 8px rgba(0,0,0,.18)}
+.login-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;box-shadow:inset 0 -3px 6px rgba(0,0,0,.22),inset 0 2px 3px rgba(255,255,255,.45),0 2px 5px rgba(0,0,0,.18)}
 .login-btn span{font-size:13px;font-weight:600;color:var(--txt)}
-.login-btn.diretor{grid-column:1/-1;flex-direction:row;justify-content:center;background:rgba(255,255,255,.15);color:#fff;border:2px solid rgba(255,255,255,.4);gap:10px}
-.login-btn.diretor span{color:#fff;font-size:14px;font-weight:700}
+.login-btn.diretor{grid-column:1/-1;flex-direction:row;justify-content:center;background:linear-gradient(180deg,#ffb74d,#f57c00);color:#fff;border:none;gap:10px;box-shadow:0 5px 0 #c25e00,0 9px 20px rgba(0,0,0,.3)}
+.login-btn.diretor:active{box-shadow:0 1px 0 #c25e00,0 3px 10px rgba(0,0,0,.25)}
+.login-btn.diretor span{color:#fff;font-size:14px;font-weight:800}
 .login-btn small{font-size:10px;color:var(--txt2);font-weight:400;margin-top:-4px}
 .login-section-title{width:100%;max-width:340px;color:rgba(255,255,255,.7);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:16px 0 6px;padding-left:2px}
 .login-logo{font-size:48px;margin-bottom:6px}
 .login-title{font-size:22px;font-weight:800;color:#fff;margin-bottom:4px}
 .login-sub{font-size:13px;color:rgba(255,255,255,.7);margin-bottom:8px}
+
+/* PIN */
+.pin-modal{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:20px}
+.pin-modal-box{position:relative;background:#fff;border-radius:18px;padding:28px 24px 22px;width:100%;max-width:300px;display:flex;flex-direction:column;align-items:center;animation:pinPop .15s ease-out}
+.pin-modal-box.shake{animation:pinShake .4s}
+@keyframes pinPop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pinShake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
+.pin-modal-close{position:absolute;top:10px;right:10px;background:none;border:none;font-size:16px;color:var(--txt2);cursor:pointer;padding:6px}
+.pin-modal-av{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;color:#fff;margin-bottom:10px;box-shadow:inset 0 -3px 6px rgba(0,0,0,.22),inset 0 2px 3px rgba(255,255,255,.45),0 2px 5px rgba(0,0,0,.18)}
+.pin-modal-user{font-weight:800;font-size:15px;color:var(--txt)}
+.pin-modal-title{font-size:12px;color:var(--txt2);margin:2px 0 16px}
+.pin-dots{display:flex;gap:14px;margin-bottom:10px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--verde);background:transparent;transition:background .1s}
+.pin-dot.filled{background:var(--verde)}
+.pin-error{font-size:12px;color:#c62828;font-weight:600;margin-bottom:10px;text-align:center}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.pin-keypad button{background:linear-gradient(180deg,#fff,var(--verde-light));border:none;border-radius:13px;padding:14px 0;font-size:18px;font-weight:800;color:var(--verde);cursor:pointer;box-shadow:0 3px 0 #bfe0c2,0 4px 8px rgba(0,0,0,.08);transition:transform .08s ease,box-shadow .08s ease}
+.pin-keypad button:active{transform:translateY(3px);background:linear-gradient(180deg,var(--verde3),var(--verde2));color:#fff;box-shadow:0 0 0 #bfe0c2}
+.pin-key-ghost{background:transparent!important;box-shadow:none!important;cursor:default!important;pointer-events:none}
 
 /* DIRETOR - import cards */
 .reg-import-card{background:#fff;border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
@@ -273,19 +298,19 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
     <!-- NÍVEL 2: Gerentes -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:0">
-      <button class="login-btn" data-user="Luiz" onclick="doLogin('Luiz')" style="padding:8px 3px">
+      <button class="login-btn" data-user="Luiz" onclick="iniciarLogin('Luiz')" style="padding:8px 3px">
         <div class="login-av" style="background:#1b5e20;width:32px;height:32px;font-size:12px">L</div>
         <span style="font-size:10px">Luiz Lira</span><small>G. Operações</small>
       </button>
-      <button class="login-btn" data-user="Rodrigo" onclick="doLogin('Rodrigo')" style="padding:8px 3px">
+      <button class="login-btn" data-user="Rodrigo" onclick="iniciarLogin('Rodrigo')" style="padding:8px 3px">
         <div class="login-av" style="background:#0277bd;width:32px;height:32px;font-size:12px">R</div>
         <span style="font-size:10px">Rodrigo</span><small>G. Comercial</small>
       </button>
-      <button class="login-btn" data-user="Alisson" onclick="doLogin('Alisson')" style="padding:8px 3px">
+      <button class="login-btn" data-user="Alisson" onclick="iniciarLogin('Alisson')" style="padding:8px 3px">
         <div class="login-av" style="background:#6a1b9a;width:32px;height:32px;font-size:12px">A</div>
         <span style="font-size:10px">Alisson</span><small>G. Conveniência</small>
       </button>
-      <button class="login-btn" data-user="Cassiano" onclick="doLogin('Cassiano')" style="padding:8px 3px">
+      <button class="login-btn" data-user="Cassiano" onclick="iniciarLogin('Cassiano')" style="padding:8px 3px">
         <div class="login-av" style="background:#ef6c00;width:32px;height:32px;font-size:12px">C</div>
         <span style="font-size:10px">Cassiano</span><small>G. Auditoria</small>
       </button>
@@ -304,23 +329,23 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
       <!-- Equipe Luiz -->
       <div style="display:flex;flex-direction:column;gap:4px;border-left:2px solid rgba(255,255,255,.3);padding-left:5px">
-        <button class="login-btn" data-user="Fabricio" onclick="doLogin('Fabricio')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Fabricio" onclick="iniciarLogin('Fabricio')" style="padding:8px 4px">
           <div class="login-av" style="background:#2e7d32;width:30px;height:30px;font-size:12px">F</div>
           <span style="font-size:11px">Fabricio</span>
         </button>
-        <button class="login-btn" data-user="Adelcio" onclick="doLogin('Adelcio')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Adelcio" onclick="iniciarLogin('Adelcio')" style="padding:8px 4px">
           <div class="login-av" style="background:#00838f;width:30px;height:30px;font-size:12px">A</div>
           <span style="font-size:11px">Adelcio</span>
         </button>
-        <button class="login-btn" data-user="Joao" onclick="doLogin('Joao')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Joao" onclick="iniciarLogin('Joao')" style="padding:8px 4px">
           <div class="login-av" style="background:#1565c0;width:30px;height:30px;font-size:12px">J</div>
           <span style="font-size:11px">João</span>
         </button>
-        <button class="login-btn" data-user="Edinei" onclick="doLogin('Edinei')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Edinei" onclick="iniciarLogin('Edinei')" style="padding:8px 4px">
           <div class="login-av" style="background:#bf360c;width:30px;height:30px;font-size:12px">E</div>
           <span style="font-size:11px">Edinei</span>
         </button>
-        <button class="login-btn" data-user="Giovani" onclick="doLogin('Giovani')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Giovani" onclick="iniciarLogin('Giovani')" style="padding:8px 4px">
           <div class="login-av" style="background:#4e342e;width:30px;height:30px;font-size:12px">G</div>
           <span style="font-size:11px">Giovani</span>
         </button>
@@ -328,11 +353,11 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
       <!-- Equipe Rodrigo -->
       <div style="display:flex;flex-direction:column;gap:4px;border-left:2px solid rgba(255,255,255,.3);padding-left:5px">
-        <button class="login-btn" data-user="Josias" onclick="doLogin('Josias')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Josias" onclick="iniciarLogin('Josias')" style="padding:8px 4px">
           <div class="login-av" style="background:#00695c;width:30px;height:30px;font-size:12px">J</div>
           <span style="font-size:11px">Josias</span><small>Multiplicador</small>
         </button>
-        <button class="login-btn" data-user="Mateus" onclick="doLogin('Mateus')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Mateus" onclick="iniciarLogin('Mateus')" style="padding:8px 4px">
           <div class="login-av" style="background:#558b2f;width:30px;height:30px;font-size:12px">M</div>
           <span style="font-size:11px">Mateus</span><small>Multiplicador</small>
         </button>
@@ -340,11 +365,11 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
       <!-- Equipe Alisson -->
       <div style="display:flex;flex-direction:column;gap:4px;border-left:2px solid rgba(255,255,255,.3);padding-left:5px">
-        <button class="login-btn" data-user="Lisiane" onclick="doLogin('Lisiane')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Lisiane" onclick="iniciarLogin('Lisiane')" style="padding:8px 4px">
           <div class="login-av" style="background:#c62828;width:30px;height:30px;font-size:12px">L</div>
           <span style="font-size:11px">Lisiane</span><small>Esp. de Loja</small>
         </button>
-        <button class="login-btn" data-user="Endiel" onclick="doLogin('Endiel')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Endiel" onclick="iniciarLogin('Endiel')" style="padding:8px 4px">
           <div class="login-av" style="background:#ad1457;width:30px;height:30px;font-size:12px">E</div>
           <span style="font-size:11px">Endiel</span><small>Esp. de Loja</small>
         </button>
@@ -352,11 +377,11 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
       <!-- Equipe Cassiano -->
       <div style="display:flex;flex-direction:column;gap:4px;border-left:2px solid rgba(255,255,255,.3);padding-left:5px">
-        <button class="login-btn" data-user="JoaoAuditor" onclick="doLogin('JoaoAuditor')" style="padding:8px 4px">
+        <button class="login-btn" data-user="JoaoAuditor" onclick="iniciarLogin('JoaoAuditor')" style="padding:8px 4px">
           <div class="login-av" style="background:#1565c0;width:30px;height:30px;font-size:12px">J</div>
           <span style="font-size:11px">João</span><small>Auditor</small>
         </button>
-        <button class="login-btn" data-user="Ronai" onclick="doLogin('Ronai')" style="padding:8px 4px">
+        <button class="login-btn" data-user="Ronai" onclick="iniciarLogin('Ronai')" style="padding:8px 4px">
           <div class="login-av" style="background:#ef6c00;width:30px;height:30px;font-size:12px">R</div>
           <span style="font-size:11px">Ronai</span><small>Auditor</small>
         </button>
@@ -364,6 +389,34 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 
     </div>
   </div><!-- /organograma -->
+</div>
+
+<!-- MODAL DE PIN -->
+<div id="pin-modal" class="pin-modal hidden">
+  <div class="pin-modal-box">
+    <button class="pin-modal-close" onclick="fecharPinModal()">✕</button>
+    <div class="pin-modal-av" id="pin-modal-av"></div>
+    <div class="pin-modal-user" id="pin-modal-user"></div>
+    <div class="pin-modal-title">Digite seu PIN</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-error hidden" id="pin-error">PIN incorreto, tente novamente</div>
+    <div class="pin-keypad">
+      <button onclick="pinDigit('1')">1</button>
+      <button onclick="pinDigit('2')">2</button>
+      <button onclick="pinDigit('3')">3</button>
+      <button onclick="pinDigit('4')">4</button>
+      <button onclick="pinDigit('5')">5</button>
+      <button onclick="pinDigit('6')">6</button>
+      <button onclick="pinDigit('7')">7</button>
+      <button onclick="pinDigit('8')">8</button>
+      <button onclick="pinDigit('9')">9</button>
+      <button class="pin-key-ghost"></button>
+      <button onclick="pinDigit('0')">0</button>
+      <button onclick="pinBackspace()">⌫</button>
+    </div>
+  </div>
 </div>
 
 <!-- ==================== APP ==================== -->
@@ -583,21 +636,21 @@ var CATS = ['Funcionários','Estrutura','Combustível','Financeiro','Segurança'
 // Hierarquia completa da organização
 var USERS = {
   Diretor:   { label:'Diretor',               role:'Direção',                   cor:'#37474f', inicial:'D', equipe:null },
-  Luiz:      { label:'Luiz Lira',             role:'Gerente de Operações',      cor:'#1b5e20', inicial:'L', equipe:['Fabricio','Adelcio','Joao','Edinei','Giovani'], todosPostos:true },
-  Rodrigo:   { label:'Rodrigo Pasquali',      role:'Gerente Comercial',         cor:'#0277bd', inicial:'R', equipe:['Josias','Mateus'], todosPostos:true },
-  Alisson:   { label:'Alisson Fernandes',     role:'Gerente de Conveniência',   cor:'#6a1b9a', inicial:'A', equipe:['Lisiane','Endiel'], todosPostos:true },
-  Cassiano:  { label:'Cassiano',              role:'Gestor de Auditoria',       cor:'#ef6c00', inicial:'C', equipe:['JoaoAuditor','Ronai'], todosPostos:true },
-  Fabricio:  { label:'Fabricio',              role:'Regional',                  cor:'#2e7d32', inicial:'F', equipe:null },
-  Adelcio:   { label:'Adelcio',               role:'Regional',                  cor:'#00838f', inicial:'A', equipe:null },
-  Joao:      { label:'João',                  role:'Regional',                  cor:'#1565c0', inicial:'J', equipe:null },
-  Edinei:    { label:'Edinei',                role:'Regional',                  cor:'#bf360c', inicial:'E', equipe:null },
-  Giovani:   { label:'Giovani',               role:'Regional',                  cor:'#4e342e', inicial:'G', equipe:null },
-  Josias:    { label:'Josias',                role:'Multiplicador',             cor:'#00695c', inicial:'J', equipe:null, todosPostos:true },
-  Mateus:    { label:'Mateus',                role:'Multiplicador',             cor:'#558b2f', inicial:'M', equipe:null, todosPostos:true },
-  Lisiane:   { label:'Lisiane',               role:'Especialista de Lojas',     cor:'#c62828', inicial:'L', equipe:null, todosPostos:true },
-  Endiel:    { label:'Endiel',                role:'Especialista de Lojas',     cor:'#6a1b9a', inicial:'E', equipe:null, todosPostos:true },
-  JoaoAuditor: { label:'João',                role:'Auditor',                   cor:'#1565c0', inicial:'J', equipe:null, todosPostos:true },
-  Ronai:     { label:'Ronai',                 role:'Auditor',                   cor:'#ef6c00', inicial:'R', equipe:null, todosPostos:true },
+  Luiz:      { label:'Luiz Lira',             role:'Gerente de Operações',      cor:'#1b5e20', inicial:'L', equipe:['Fabricio','Adelcio','Joao','Edinei','Giovani'], pin:'1001' },
+  Rodrigo:   { label:'Rodrigo Pasquali',      role:'Gerente Comercial',         cor:'#0277bd', inicial:'R', equipe:['Josias','Mateus'], todosPostos:true, pin:'2002' },
+  Alisson:   { label:'Alisson Fernandes',     role:'Gerente de Conveniência',   cor:'#6a1b9a', inicial:'A', equipe:['Lisiane','Endiel'], todosPostos:true, pin:'3003' },
+  Cassiano:  { label:'Cassiano',              role:'Gestor de Auditoria',       cor:'#ef6c00', inicial:'C', equipe:['JoaoAuditor','Ronai'], todosPostos:true, pin:'4040' },
+  Fabricio:  { label:'Fabricio',              role:'Regional',                  cor:'#2e7d32', inicial:'F', equipe:null, pin:'4004' },
+  Adelcio:   { label:'Adelcio',               role:'Regional',                  cor:'#00838f', inicial:'A', equipe:null, pin:'5005' },
+  Joao:      { label:'João',                  role:'Regional',                  cor:'#1565c0', inicial:'J', equipe:null, pin:'6006' },
+  Edinei:    { label:'Edinei',                role:'Regional',                  cor:'#bf360c', inicial:'E', equipe:null, pin:'7007' },
+  Giovani:   { label:'Giovani',               role:'Regional',                  cor:'#4e342e', inicial:'G', equipe:null, pin:'8008' },
+  Josias:    { label:'Josias',                role:'Multiplicador',             cor:'#00695c', inicial:'J', equipe:null, todosPostos:true, pin:'9009' },
+  Mateus:    { label:'Mateus',                role:'Multiplicador',             cor:'#558b2f', inicial:'M', equipe:null, todosPostos:true, pin:'1010' },
+  Lisiane:   { label:'Lisiane',               role:'Especialista de Lojas',     cor:'#c62828', inicial:'L', equipe:null, todosPostos:true, pin:'2020' },
+  Endiel:    { label:'Endiel',                role:'Especialista de Lojas',     cor:'#6a1b9a', inicial:'E', equipe:null, todosPostos:true, pin:'3030' },
+  JoaoAuditor: { label:'João',                role:'Auditor',                   cor:'#1565c0', inicial:'J', equipe:null, todosPostos:true, pin:'5050' },
+  Ronai:     { label:'Ronai',                 role:'Auditor',                   cor:'#ef6c00', inicial:'R', equipe:null, todosPostos:true, pin:'6060' },
 };
 
 var METAS_DEFAULT = {Fabricio:25,Adelcio:25,Joao:25,Edinei:25,Giovani:25,Josias:25,Mateus:25,Lisiane:25,Endiel:25,Luiz:25,Rodrigo:25,Alisson:25,Cassiano:25,JoaoAuditor:25,Ronai:25};
@@ -883,6 +936,65 @@ function getWeekDates(offset){
 }
 
 // ==================== LOGIN ====================
+// ==================== PIN DE LOGIN ====================
+// Todo mundo entra com PIN, menos o Diretor (acessa direto, já vê todo mundo).
+var PIN_BUFFER = '';
+var PIN_TARGET_USER = null;
+
+function iniciarLogin(user){
+  if(user==='Diretor'){ doLogin(user); return; }
+  PIN_TARGET_USER = user;
+  PIN_BUFFER = '';
+  var h = USERS[user];
+  document.getElementById('pin-modal-user').textContent = fmtReg(user);
+  var av = document.getElementById('pin-modal-av');
+  av.textContent = h.inicial;
+  av.style.background = h.cor;
+  document.getElementById('pin-error').classList.add('hidden');
+  atualizarPinDots();
+  document.getElementById('pin-modal').classList.remove('hidden');
+}
+
+function fecharPinModal(){
+  document.getElementById('pin-modal').classList.add('hidden');
+  PIN_BUFFER = '';
+  PIN_TARGET_USER = null;
+}
+
+function atualizarPinDots(){
+  document.querySelectorAll('#pin-dots .pin-dot').forEach(function(d,i){
+    d.classList.toggle('filled', i < PIN_BUFFER.length);
+  });
+}
+
+function pinDigit(d){
+  if(PIN_BUFFER.length>=4) return;
+  PIN_BUFFER += d;
+  atualizarPinDots();
+  if(PIN_BUFFER.length===4) setTimeout(verificarPin, 150);
+}
+
+function pinBackspace(){
+  PIN_BUFFER = PIN_BUFFER.slice(0,-1);
+  atualizarPinDots();
+}
+
+function verificarPin(){
+  var h = USERS[PIN_TARGET_USER];
+  if(h && PIN_BUFFER===h.pin){
+    var user = PIN_TARGET_USER;
+    fecharPinModal();
+    doLogin(user);
+  } else {
+    document.getElementById('pin-error').classList.remove('hidden');
+    var box = document.querySelector('.pin-modal-box');
+    box.classList.add('shake');
+    setTimeout(function(){ box.classList.remove('shake'); }, 400);
+    PIN_BUFFER = '';
+    atualizarPinDots();
+  }
+}
+
 function doLogin(user){
   STATE.usuario = user;
   document.getElementById('screen-login').classList.add('hidden');
