@@ -537,6 +537,10 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
       <span>📋 Plano de Ação do Posto</span>
       <span id="pd-plano-count" style="font-size:11px;color:var(--txt2)"></span>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input type="text" id="pd-nova-demanda" placeholder="+ Nova demanda de hoje..." style="flex:1;border:1px solid var(--cinza2);border-radius:8px;padding:8px 10px;font-size:13px" onkeydown="if(event.key==='Enter'){adicionarDemandaRapida();}">
+      <button class="btn btn-primary btn-sm" onclick="adicionarDemandaRapida()">Adicionar</button>
+    </div>
     <div id="pd-plano"></div>
   </div>
   <div class="card">
@@ -631,7 +635,6 @@ var POSTOS = {
   ]
 };
 
-var CATS = ['Funcionários','Estrutura','Combustível','Financeiro','Segurança','Limpeza','Equipamentos','Outro'];
 
 // Hierarquia completa da organização
 var USERS = {
@@ -1174,18 +1177,17 @@ function demandaItemHTML(v, d){
       (hEntry.nota?'<br>'+hEntry.nota:'')+
       '</div>';
   }).join('');
-  // 5W2H essencial: O quê (d.desc) · Quem (d.responsavel) · Quando (d.prazo) · Como (d.como)
+  // Lista simples: O quê (d.desc) · Quem (d.responsavel) · Quando (d.prazo)
   var w2h = [];
   if(d.responsavel) w2h.push('👤 <strong>'+d.responsavel+'</strong>');
   if(d.prazo) w2h.push('📅 prazo '+fmtDate(d.prazo));
-  if(d.como) w2h.push('🔧 '+d.como);
   var w2hHtml = w2h.length ? '<div style="font-size:11px;color:var(--txt2);margin-top:3px">'+w2h.join(' · ')+'</div>' : '';
   return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:'+(d.status==='resolvido'?'#f1f8e9':d.status==='andamento'?'#e3f2fd':'#fff8e1')+'">'+
     '<div style="display:flex;align-items:flex-start;gap:6px">'+
     '<span style="font-size:15px">'+icon+'</span>'+
     '<div style="flex:1;min-width:0">'+
     '<div style="font-size:13px;font-weight:600">'+d.desc+'</div>'+
-    '<div style="font-size:11px;color:var(--txt2)">'+d.cat+' · registrado por <strong style="color:var(--txt)">'+fmtReg(v.usuario||v.regional)+'</strong> · <span class="badge badge-'+d.status+'" style="font-size:10px;padding:2px 6px">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span></div>'+
+    '<div style="font-size:11px;color:var(--txt2)">registrado por <strong style="color:var(--txt)">'+fmtReg(v.usuario||v.regional)+'</strong> · <span class="badge badge-'+d.status+'" style="font-size:10px;padding:2px 6px">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span></div>'+
     w2hHtml+
     (timeline?'<div style="margin-top:6px">'+timeline+'</div>':'')+
     btns+
@@ -1306,37 +1308,27 @@ function selTipo(el){
   }
 }
 
-// Campos no modelo 5W2H essencial: O quê (desc) · Quem (responsavel) · Quando (prazo) · Como (como)
+// Lista simples: O quê (desc) · Quem (responsavel) · Quando (prazo).
+// cat/status/como não têm mais campo próprio no formulário (histórico de agendamento editado guarda
+// os valores antigos em data-attributes, pra não perder o status ao reabrir editarAgendamento).
 function addDemanda(desc, cat, status, responsavel, prazo, como){
-  desc = desc||''; cat = cat||'Funcionários'; status = status||'pendente';
+  desc = desc||''; cat = cat||''; status = status||'pendente';
   responsavel = responsavel||''; prazo = prazo||''; como = como||'';
   var id = uid();
   var div = document.createElement('div');
   div.className = 'dem-row '+status;
   div.id = 'dem-'+id;
+  div.dataset.cat = cat; div.dataset.status = status; div.dataset.como = como;
   div.innerHTML =
     '<div class="dem-body">'+
     '<input class="dem-input" type="text" placeholder="O que precisa ser feito?..." value="'+desc+'">'+
-    '<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">'+
-    '<select class="dem-sel dem-cat">'+CATS.map(function(c){ return '<option'+(c===cat?' selected':'')+'>'+c+'</option>'; }).join('')+'</select>'+
-    '<select class="dem-sel dem-status" onchange="updateDemStatus(this)">'+
-    '<option value="pendente"'+(status==='pendente'?' selected':'')+'>⚠️ Pendente</option>'+
-    '<option value="andamento"'+(status==='andamento'?' selected':'')+'>🔄 Em andamento</option>'+
-    '<option value="resolvido"'+(status==='resolvido'?' selected':'')+'>✅ Resolvido</option>'+
-    '</select></div>'+
     '<div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">'+
     '<input class="dem-sel dem-resp" type="text" placeholder="👤 Quem" style="flex:1;min-width:110px;border-bottom:1px dashed var(--cinza2);padding:3px 0" value="'+responsavel+'">'+
     '<input class="dem-sel dem-prazo" type="date" style="border-bottom:1px dashed var(--cinza2);padding:3px 0" value="'+prazo+'">'+
     '</div>'+
-    '<input class="dem-input dem-como" type="text" placeholder="🔧 Como (ação/método)..." style="font-size:12px;font-weight:400;margin-top:6px;border-bottom:1px dashed var(--cinza2);padding:3px 0" value="'+como+'">'+
     '</div>'+
     '<button class="dem-del" onclick="document.getElementById(\'dem-'+id+'\').remove()">✕</button>';
   document.getElementById('lista-demandas').appendChild(div);
-}
-
-function updateDemStatus(sel){
-  var row = sel.closest('.dem-row');
-  row.className = 'dem-row '+sel.value;
 }
 
 function toggleSemDemanda(chk){
@@ -1371,11 +1363,11 @@ function salvarVisita(){
   var dems = [];
   document.querySelectorAll('#lista-demandas .dem-row').forEach(function(row){
     var desc = row.querySelector('.dem-input').value.trim();
-    var cat = row.querySelector('.dem-cat').value;
-    var status = row.querySelector('.dem-status').value;
+    var cat = row.dataset.cat||'';
+    var status = row.dataset.status||'pendente';
     var responsavel = row.querySelector('.dem-resp').value.trim();
     var prazo = row.querySelector('.dem-prazo').value;
-    var como = row.querySelector('.dem-como').value.trim();
+    var como = row.dataset.como||'';
     if(desc) dems.push({id:uid(), desc:desc, cat:cat, status:status, responsavel:responsavel, prazo:prazo, como:como});
   });
 
@@ -1795,10 +1787,10 @@ function abrirPosto(fil, regional){
 
   var cardPlano = document.getElementById('card-pd-plano');
   var rPlano = planoAcaoHTML(fil, null);
-  if(rPlano.totalVisitas){
+  if(fil>0){
     cardPlano.classList.remove('hidden');
-    document.getElementById('pd-plano-count').textContent = rPlano.totalDems+' demanda(s) em '+rPlano.totalVisitas+' visita(s)';
-    document.getElementById('pd-plano').innerHTML = rPlano.html;
+    document.getElementById('pd-plano-count').textContent = rPlano.totalVisitas ? (rPlano.totalDems+' demanda(s) em '+rPlano.totalVisitas+' visita(s)') : '';
+    document.getElementById('pd-plano').innerHTML = rPlano.totalVisitas ? rPlano.html : '<div style="text-align:center;color:var(--txt2);font-size:13px;padding:12px 0">Nenhuma demanda registrada ainda</div>';
   } else {
     cardPlano.classList.add('hidden');
   }
@@ -1816,6 +1808,31 @@ function abrirPosto(fil, regional){
       '<span class="badge '+(v.tipo==='agendamento'?'badge-agendada':(np>0?'badge-pendente':'badge-ok'))+'">'+
       (v.tipo==='agendamento'?'Agend.':(np>0?np+' pend.':'OK'))+'</span></div>';
   }).join('');
+}
+
+// Adiciona uma demanda direto no Plano de Ação, sem passar pelo formulário completo de Registrar Visita.
+// Junta na visita de hoje do usuário logado nesse posto (se já criou uma hoje) em vez de criar
+// um registro novo a cada clique, senão cada demanda do dia viraria uma "visita" separada no histórico.
+function adicionarDemandaRapida(){
+  var fil = STATE.currentPostoFil, regional = STATE.currentPostoRegional;
+  var input = document.getElementById('pd-nova-demanda');
+  var desc = input.value.trim();
+  if(!desc){ toast('Digite a demanda'); return; }
+  var arr = []; try{ arr = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
+  var hoje = today();
+  var v = arr.find(function(x){ return x.usuario===STATE.usuario && x.postoFil===fil && x.regional===regional && x.data===hoje && x.tipo==='visita'; });
+  if(!v){
+    var posto = (POSTOS[regional]||[]).find(function(p){ return p.fil===fil; });
+    v = { id: uid(), usuario: STATE.usuario, regional: regional, postoNome: posto?posto.nome:('Posto '+fil), postoFil: fil, data: hoje, hora: new Date().toTimeString().slice(0,5), tipo:'visita', demandas: [], obs:'', criadoEm: Date.now() };
+    arr.push(v);
+  }
+  v.demandas = v.demandas||[];
+  v.demandas.push({ id: uid(), desc: desc, cat:'', status:'pendente', responsavel:'', prazo:'', como:'' });
+  localStorage.setItem('crm_v', JSON.stringify(arr));
+  sincronizarRegional();
+  input.value = '';
+  toast('✅ Demanda adicionada');
+  abrirPosto(fil, regional);
 }
 
 // Atalho "+ Nova Visita" dentro do Posto: abre o formulário já com o posto certo escolhido.
@@ -1897,11 +1914,9 @@ function abrirVisita(id){
       var w2h = [];
       if(d.responsavel) w2h.push('👤 '+d.responsavel);
       if(d.prazo) w2h.push('📅 prazo '+fmtDate(d.prazo));
-      if(d.como) w2h.push('🔧 '+d.como);
       return '<div class="dem-row '+d.status+'">'+
         '<div class="dem-body">'+
         '<div class="dem-desc">'+icon+' '+d.desc+'</div>'+
-        '<div class="dem-cat">'+d.cat+'</div>'+
         (w2h.length?'<div class="dem-cat" style="margin-top:2px">'+w2h.join(' · ')+'</div>':'')+
         '</div>'+
         '<span class="badge badge-'+d.status+'">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span>'+
