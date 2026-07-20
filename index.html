@@ -494,7 +494,8 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
     </div>
   </div>
 
-  <button class="btn btn-primary btn-full" onclick="salvarVisita()" style="margin-bottom:16px">💾 Salvar Registro</button>
+  <button class="btn btn-primary btn-full" onclick="salvarVisita()" style="margin-bottom:12px">💾 Salvar Registro</button>
+  <button id="btn-excluir-registro" class="btn btn-danger btn-full hidden" onclick="excluirRegistroAtual()" style="margin-bottom:16px">🗑️ Excluir Registro</button>
 </div>
 
 <!-- AGENDA SEMANAL -->
@@ -1103,6 +1104,7 @@ function mostrarFormularioCompleto(){
 function setupNovaVisita(){
   mostrarFormularioCompleto();
   STATE.editandoId = null;
+  document.getElementById('btn-excluir-registro').classList.add('hidden');
   document.getElementById('reg-data').value = today();
   document.getElementById('reg-hora').value = new Date().toTimeString().slice(0,5);
   document.getElementById('reg-obs').value = '';
@@ -1147,6 +1149,7 @@ function editarAgendamento(id){
   if(!v) return;
   setupNovaVisita();
   STATE.editandoId = id;
+  document.getElementById('btn-excluir-registro').classList.remove('hidden');
   // Tipo
   document.querySelectorAll('[data-tipo]').forEach(function(c){ c.classList.remove('sel'); });
   document.querySelector('[data-tipo="'+v.tipo+'"]').classList.add('sel');
@@ -1475,6 +1478,22 @@ function salvarVisita(){
     navTo('postos');
     document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='postos'); });
   }
+}
+
+// Exclui o registro que está sendo editado (só disponível reabrindo um agendamento/visita já
+// existente, nunca num registro novo). Remove do armazenamento local do usuário logado e tenta
+// sincronizar em seguida — como o backend do Sheets faz upsert por id (nunca recebe uma ação de
+// "excluir"), isso garante que o registro suma da visão deste usuário/aparelho, mas não há
+// garantia de que a linha correspondente seja removida da planilha remota.
+function excluirRegistroAtual(){
+  if(!STATE.editandoId) return;
+  if(!confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
+  var id = STATE.editandoId;
+  saveData(loadData().filter(function(v){ return v.id!==id; }));
+  sincronizarRegional();
+  toast('🗑️ Registro excluído');
+  STATE.editandoId = null;
+  goBack();
 }
 
 // ==================== AGENDA SEMANAL ====================
