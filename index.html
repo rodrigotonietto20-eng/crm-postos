@@ -432,14 +432,14 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 
 <!-- NOVA VISITA -->
 <div id="screen-nova-visita" class="section hidden">
-  <div class="card">
+  <div class="card" id="card-tipo-registro">
     <div class="card-title">Tipo de Registro</div>
     <div class="chip-row">
       <div class="chip sel" data-tipo="visita" onclick="selTipo(this)">✅ Visita Realizada</div>
       <div class="chip" data-tipo="agendamento" onclick="selTipo(this)">📅 Agendar Visita</div>
     </div>
   </div>
-  <div class="card">
+  <div class="card" id="card-dados">
     <div class="card-title">Dados</div>
     <div class="form-group" id="grp-regional">
       <label>Regional</label>
@@ -470,7 +470,7 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
   </div>
 
   <div class="card" id="card-demandas">
-    <div class="card-title">📋 Demandas Tratadas <span style="color:var(--laranja)">*obrigatório</span></div>
+    <div class="card-title"><span id="lbl-card-demandas">📋 Demandas Tratadas</span> <span style="color:var(--laranja)">*obrigatório</span></div>
     <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">Registre o que foi observado/conversado nesta visita ao posto.</div>
     <div id="lista-demandas"></div>
     <button class="btn btn-secondary btn-sm" id="btn-add-demanda" onclick="addDemanda()" style="margin-top:8px">+ Adicionar Demanda</button>
@@ -480,7 +480,7 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
     </label>
   </div>
 
-  <div class="card">
+  <div class="card" id="card-obs-foto">
     <div class="form-group">
       <label>Observações Gerais</label>
       <textarea id="reg-obs" placeholder="Anotações sobre a visita..."></textarea>
@@ -1086,7 +1086,22 @@ function goBack(){
 }
 
 // ==================== NOVA VISITA ====================
+// Rótulo da seção de demandas muda conforme o tipo: agendamento ainda não aconteceu
+// ("a serem tratadas", plano do que fazer), visita já aconteceu ("Tratadas", o que foi feito.
+function atualizarLabelDemandas(){
+  var lbl = document.getElementById('lbl-card-demandas');
+  if(lbl) lbl.textContent = STATE.tipoReg==='agendamento' ? '📋 Demandas a serem tratadas' : '📋 Demandas Tratadas';
+}
+
+// Reexibe Tipo/Dados/Observações-Foto, escondidos pelo atalho abrirDemandasAgendamento()
+function mostrarFormularioCompleto(){
+  document.getElementById('card-tipo-registro').classList.remove('hidden');
+  document.getElementById('card-dados').classList.remove('hidden');
+  document.getElementById('card-obs-foto').classList.remove('hidden');
+}
+
 function setupNovaVisita(){
+  mostrarFormularioCompleto();
   STATE.editandoId = null;
   document.getElementById('reg-data').value = today();
   document.getElementById('reg-hora').value = new Date().toTimeString().slice(0,5);
@@ -1124,6 +1139,7 @@ function setupNovaVisita(){
   document.getElementById('card-demandas').classList.remove('hidden');
   document.getElementById('grp-hora').classList.remove('hidden');
   document.getElementById('lbl-data').textContent = 'Data da Visita';
+  atualizarLabelDemandas();
 }
 
 function editarAgendamento(id){
@@ -1139,6 +1155,7 @@ function editarAgendamento(id){
   document.getElementById('card-demandas').classList.remove('hidden');
   document.getElementById('grp-hora').classList.remove('hidden');
   document.getElementById('lbl-data').textContent = isA ? 'Data Prevista da Visita *' : 'Data da Visita';
+  atualizarLabelDemandas();
   // Dados
   document.getElementById('reg-data').value = v.data;
   document.getElementById('reg-hora').value = v.hora||'';
@@ -1158,16 +1175,17 @@ function editarAgendamento(id){
   navTo('nova-visita');
 }
 
-// Atalho pro link "➕ Toque para adicionar demandas" no card da Agenda: abre o agendamento
-// já editando e pula direto pra seção de demandas (rolando até ela e focando o campo),
-// sem o usuário precisar rolar manualmente passando por Tipo/Posto/Data.
+// Atalho pro link "➕ Toque para adicionar demandas" no card da Agenda: abre o agendamento já
+// editando, mas escondendo Tipo/Dados/Observações-Foto — a visita já está definida (é este
+// agendamento específico), só falta listar o que precisa ser feito.
 function abrirDemandasAgendamento(id, ev){
   if(ev) ev.stopPropagation();
   editarAgendamento(id);
+  document.getElementById('card-tipo-registro').classList.add('hidden');
+  document.getElementById('card-dados').classList.add('hidden');
+  document.getElementById('card-obs-foto').classList.add('hidden');
+  if(!document.querySelectorAll('#lista-demandas .dem-row').length) addDemanda();
   setTimeout(function(){
-    var card = document.getElementById('card-demandas');
-    if(card) card.scrollIntoView({behavior:'smooth', block:'start'});
-    if(!document.querySelectorAll('#lista-demandas .dem-row').length) addDemanda();
     var inputs = document.querySelectorAll('#lista-demandas .dem-row .dem-input');
     if(inputs.length) inputs[inputs.length-1].focus();
   }, 100);
@@ -1321,6 +1339,7 @@ function selTipo(el){
   } else {
     if(!document.getElementById('reg-data').value) document.getElementById('reg-data').value = today();
   }
+  atualizarLabelDemandas();
 }
 
 // Lista simples: O quê (desc) · Quem (responsavel) · Quando (prazo).
@@ -1629,6 +1648,7 @@ function confirmarVisita(id, ev){
   navTo('nova-visita');
 
   setTimeout(function(){
+    mostrarFormularioCompleto();
     document.getElementById('reg-regional').value = v.regional;
     atualizarPostos();
     document.getElementById('reg-posto').value = (v.regional||v.usuario)+'|'+v.postoFil;
@@ -1641,6 +1661,7 @@ function confirmarVisita(id, ev){
     document.getElementById('card-demandas').classList.remove('hidden');
     document.getElementById('grp-hora').classList.remove('hidden');
     document.getElementById('lbl-data').textContent = 'Data da Visita';
+    atualizarLabelDemandas();
     document.getElementById('lista-demandas').innerHTML = '';
     document.getElementById('chk-sem-demanda').checked = false;
     toggleSemDemanda(document.getElementById('chk-sem-demanda'));
