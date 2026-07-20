@@ -133,16 +133,15 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
 /* ===== WEEKLY AGENDA ===== */
 .week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .week-nav-title{font-size:15px;font-weight:700;color:var(--txt)}
-.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px}
-.week-day{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:10px;cursor:pointer;transition:background .15s;position:relative}
-.week-day .wd-label{font-size:10px;font-weight:600;color:var(--txt2);text-transform:uppercase}
-.week-day .wd-num{font-size:17px;font-weight:700;margin-top:2px}
+.week-strip{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 10px;margin-bottom:8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.week-day{flex:0 0 176px;display:flex;flex-direction:column;background:#fafafa;border-radius:14px;padding:10px;scroll-snap-align:start}
 .week-day.today{background:var(--verde-light)}
+.week-day .wd-head{text-align:center;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.06)}
+.week-day .wd-label{font-size:10px;font-weight:600;color:var(--txt2);text-transform:uppercase}
+.week-day .wd-num{font-size:17px;font-weight:700;margin-top:1px}
 .week-day.today .wd-num{color:var(--verde)}
-.week-day.selected{background:var(--verde)}
-.week-day.selected .wd-label,.week-day.selected .wd-num{color:#fff}
-.week-day .wd-dot{width:5px;height:5px;border-radius:50%;background:var(--verde);margin-top:3px}
-.week-day.selected .wd-dot{background:#fff}
+.week-day .week-event-card{padding:10px 12px}
+.week-day .we-posto{font-size:13px}
 .week-events{}
 
 /* ===== CARD INDIVIDUAL POR USUÁRIO (status + mini agenda) ===== */
@@ -453,22 +452,13 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:var(--txt);min-h
       <div class="week-nav-title" id="week-title"></div>
       <button class="btn btn-sm btn-secondary" onclick="changeWeek(1)">Próxima →</button>
     </div>
-    <div class="week-strip" id="week-strip"></div>
   </div>
   <div id="agenda-tipo-filter" class="period-filter" style="margin-top:4px;display:none">
     <div class="filter-chip active" data-at="agendamento" onclick="setAgendaFilter(this)">📅 Agendamentos</div>
     <div class="filter-chip" data-at="visita" onclick="setAgendaFilter(this)">✅ Realizadas</div>
     <div class="filter-chip" data-at="todos" onclick="setAgendaFilter(this)">Todos</div>
   </div>
-  <div id="week-events-container">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 0 8px">
-      <div class="card-title" id="agenda-day-label" style="padding:0"></div>
-      <button class="btn btn-primary btn-sm" id="btn-agendar-dia" onclick="iniciarAgendaDia()" style="flex-shrink:0">➕ Agendar Visita</button>
-    </div>
-    <div id="week-events-list"></div>
-  </div>
-  <div class="card-title" style="padding:16px 0 8px">📋 Lista da Semana</div>
-  <div id="week-lista-completa"></div>
+  <div class="week-strip" id="week-strip"></div>
   <div style="padding:4px 0 12px">
     <button class="btn btn-secondary btn-full" onclick="exportarSemanaWhatsApp()" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25d366;color:#fff;border:none;font-size:13px;padding:13px">
       <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -1333,6 +1323,7 @@ function salvarVisita(){
     navTo('agenda');
     document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='agenda'); });
     renderWeekAgenda();
+    scrollToAgendaDay(targetDate);
   } else if(v.postoFil>0){
     // Visita realizada a um posto real: volta pro Plano de Ação daquele posto, já atualizado
     abrirPosto(v.postoFil, v.regional);
@@ -1348,10 +1339,7 @@ function setAgendaFilter(el){
   document.querySelectorAll('#agenda-tipo-filter .filter-chip').forEach(function(c){ c.classList.remove('active'); });
   el.classList.add('active');
   STATE.agendaFilter = el.dataset.at;
-  var byDay = getByDay();
-  renderWeekStrip(getWeekDates(STATE.weekOffset), byDay);
-  if(STATE.agendaDay) renderAgendaDay(byDay);
-  renderWeekListaCompleta(getWeekDates(STATE.weekOffset), byDay);
+  renderWeekStrip(getWeekDates(STATE.weekOffset), getByDay());
 }
 
 function getByDay(){
@@ -1384,10 +1372,6 @@ function renderWeekAgenda(){
   var filterEl = document.getElementById('agenda-tipo-filter');
   if(filterEl) filterEl.style.display = temEquipe ? 'flex' : 'none';
 
-  // Diretor só acompanha (visão sistêmica de todos), não agenda visita pra si mesmo
-  var btnAgendar = document.getElementById('btn-agendar-dia');
-  if(btnAgendar) btnAgendar.classList.toggle('hidden', user==='Diretor');
-
   var syncBar = document.getElementById('agenda-sync-bar');
   if(temEquipe){
     if(!syncBar){
@@ -1402,31 +1386,6 @@ function renderWeekAgenda(){
 
   var byDay = getByDay();
   renderWeekStrip(days, byDay);
-  if(STATE.agendaDay) renderAgendaDay(byDay);
-  renderWeekListaCompleta(days, byDay);
-}
-
-// Lista corrida de todos os dias da semana (não só o dia selecionado no week-strip),
-// agrupada por data — visão "de relance" da semana inteira, abaixo do dia a dia.
-function renderWeekListaCompleta(days, byDay){
-  var wrap = document.getElementById('week-lista-completa');
-  if(!wrap) return;
-  var todosEvs = [];
-  days.forEach(function(ds){ (byDay[ds]||[]).forEach(function(v){ todosEvs.push(v); }); });
-  if(!todosEvs.length){
-    wrap.innerHTML = '<div class="card"><div class="no-events">Nenhum registro nesta semana</div></div>';
-    return;
-  }
-  todosEvs.sort(function(a,b){ return a.data.localeCompare(b.data) || (a.hora||'').localeCompare(b.hora||''); });
-  var porDia = {};
-  todosEvs.forEach(function(v){ if(!porDia[v.data]) porDia[v.data]=[]; porDia[v.data].push(v); });
-  wrap.innerHTML = Object.keys(porDia).sort().map(function(ds){
-    var d = parseDateLocal(ds);
-    var isHoje = ds===today();
-    var label = DIAS[d.getDay()]+' '+d.getDate()+'/'+MESES[d.getMonth()]+(isHoje?' · Hoje':'');
-    var cards = porDia[ds].map(function(v){ return renderEventoCard(v, isHoje); }).join('');
-    return '<div style="font-size:11px;font-weight:800;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 6px;padding-left:2px">'+label+'</div>'+cards;
-  }).join('');
 }
 
 function parseDateLocal(ds){
@@ -1434,80 +1393,68 @@ function parseDateLocal(ds){
   return new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
 }
 
+// Faixa da semana: uma coluna por dia (nome+número do dia, botão "Agendar" e os
+// cards de visita/agendamento daquele dia), lado a lado, com rolagem horizontal.
+// Substitui a antiga dupla dia-selecionado-em-cima + lista corrida embaixo.
 function renderWeekStrip(days, byDay){
   var strip = document.getElementById('week-strip');
-  strip.innerHTML = days.map(function(ds){
-    var d = parseDateLocal(ds);
-    var isToday = ds===today(); var isSel = ds===STATE.agendaDay;
-    var hasEv = !!(byDay[ds]&&byDay[ds].length);
-    var cls = 'week-day'+(isToday?' today':'')+(isSel?' selected':'');
-    return '<div class="'+cls+'" onclick="selectAgendaDay(\''+ds+'\')">'+
-      '<div class="wd-label">'+DIAS[d.getDay()]+'</div>'+
-      '<div class="wd-num">'+d.getDate()+'</div>'+
-      (hasEv?'<div class="wd-dot"></div>':'<div style="height:8px"></div>')+
-      '</div>';
-  }).join('');
-}
-
-function selectAgendaDay(ds){
-  STATE.agendaDay = ds;
-  var byDay = getByDay();
-  renderWeekStrip(getWeekDates(STATE.weekOffset), byDay);
-  renderAgendaDay(byDay);
-}
-
-// Atalho "➕ Agendar Visita" no dia selecionado da Agenda: abre o formulário já em modo
-// "Agendar Visita" com a data do dia clicado — o usuário escolhe o posto e o horário.
-// Cada clique cria um agendamento novo e independente, então dá pra repetir várias vezes
-// no mesmo dia sem problema (mais de uma visita agendada por dia).
-function iniciarAgendaDia(){
-  setupNovaVisita();
-  document.querySelector('[data-tipo="agendamento"]').click();
-  document.getElementById('reg-data').value = STATE.agendaDay || today();
-  navTo('nova-visita');
-}
-
-function renderAgendaDay(byDay){
-  var ds = STATE.agendaDay;
-  var d = parseDateLocal(ds);
-  var MESES_EXT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  var isHoje = ds===today();
-  document.getElementById('agenda-day-label').textContent = '📅 '+DIAS[d.getDay()]+', '+d.getDate()+' de '+MESES_EXT[d.getMonth()];
-  var list = document.getElementById('week-events-list');
-  var evs = byDay[ds]||[];
-
-  var filtro = STATE.agendaFilter||'agendamento';
-  var label = filtro==='visita'?'Nenhuma visita realizada neste dia':filtro==='todos'?'Nenhum registro neste dia':'Nenhum agendamento neste dia';
-  if(!evs.length){
-    list.innerHTML='<div class="card"><div class="no-events">'+label+'</div></div>';
-    return;
-  }
-
+  if(!strip) return;
   var isDiretor = STATE.usuario==='Diretor';
   var hCur = USERS[STATE.usuario];
   var temEquipeView = isDiretor || (hCur && hCur.equipe && hCur.equipe.length);
+  var filtro = STATE.agendaFilter||'agendamento';
+  var semLabel = filtro==='visita'?'Nenhuma visita realizada':filtro==='todos'?'Nenhum registro':'Nenhum agendamento';
 
-  if(temEquipeView){
-    var grupos = {};
-    evs.slice().sort(function(a,b){
-      return fmtReg(a.usuario||a.regional).localeCompare(fmtReg(b.usuario||b.regional)) || (a.hora||'').localeCompare(b.hora||'');
-    }).forEach(function(v){
-      var k = v.usuario||v.regional;
-      if(!grupos[k]) grupos[k]=[];
-      grupos[k].push(v);
-    });
-    list.innerHTML = Object.keys(grupos).sort(function(a,b){ return fmtReg(a).localeCompare(fmtReg(b)); }).map(function(k){
-      var cor = corUser(k);
-      var cards = grupos[k].map(function(v){ return renderEventoCard(v, isHoje); }).join('');
-      return '<div style="display:flex;align-items:center;gap:6px;margin:14px 0 6px;padding-left:2px">'+
-        '<div style="width:8px;height:8px;border-radius:50%;background:'+cor+';flex-shrink:0"></div>'+
-        '<div style="font-size:12px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.5px">'+fmtReg(k)+'</div>'+
-        '<div style="flex:1;height:1px;background:#e0e0e0"></div>'+
-        '</div>'+cards;
-    }).join('');
-  } else {
-    list.innerHTML = evs.map(function(v){ return renderEventoCard(v, isHoje); }).join('');
-  }
+  strip.innerHTML = days.map(function(ds){
+    var d = parseDateLocal(ds);
+    var isHoje = ds===today();
+    var evs = byDay[ds]||[];
+    var head = '<div class="wd-head">'+
+      '<div class="wd-label">'+DIAS[d.getDay()]+(isHoje?' · Hoje':'')+'</div>'+
+      '<div class="wd-num">'+d.getDate()+'</div></div>';
+    // Diretor só acompanha (visão sistêmica de todos), não agenda visita pra si mesmo
+    var btnAgendar = isDiretor ? '' :
+      '<button class="btn btn-primary btn-sm btn-full" style="margin-bottom:8px" onclick="iniciarAgendaDia(\''+ds+'\')">➕ Agendar</button>';
+
+    var content;
+    if(!evs.length){
+      content = '<div class="no-events" style="padding:10px 4px;font-size:12px">'+semLabel+'</div>';
+    } else if(temEquipeView){
+      var grupos = {};
+      evs.slice().sort(function(a,b){
+        return fmtReg(a.usuario||a.regional).localeCompare(fmtReg(b.usuario||b.regional)) || (a.hora||'').localeCompare(b.hora||'');
+      }).forEach(function(v){
+        var k = v.usuario||v.regional;
+        if(!grupos[k]) grupos[k]=[];
+        grupos[k].push(v);
+      });
+      content = Object.keys(grupos).sort(function(a,b){ return fmtReg(a).localeCompare(fmtReg(b)); }).map(function(k){
+        var cor = corUser(k);
+        var cards = grupos[k].map(function(v){ return renderEventoCard(v, isHoje); }).join('');
+        return '<div style="font-size:10px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.4px;margin:0 0 4px">'+fmtReg(k)+'</div>'+cards;
+      }).join('');
+    } else {
+      content = evs.map(function(v){ return renderEventoCard(v, isHoje); }).join('');
+    }
+
+    return '<div class="week-day'+(isHoje?' today':'')+'" id="day-sec-'+ds+'">'+head+btnAgendar+content+'</div>';
+  }).join('');
+}
+
+function scrollToAgendaDay(ds){
+  var sec = document.getElementById('day-sec-'+ds);
+  if(sec) sec.scrollIntoView({behavior:'smooth', inline:'start', block:'nearest'});
+}
+
+// Atalho "➕ Agendar Visita" no bloco de um dia específico da semana: abre o formulário já em
+// modo "Agendar Visita" com a data daquele dia — o usuário escolhe o posto e o horário.
+// Cada clique cria um agendamento novo e independente, então dá pra repetir várias vezes
+// no mesmo dia sem problema (mais de uma visita agendada por dia).
+function iniciarAgendaDia(ds){
+  setupNovaVisita();
+  document.querySelector('[data-tipo="agendamento"]').click();
+  document.getElementById('reg-data').value = ds || STATE.agendaDay || today();
+  navTo('nova-visita');
 }
 
 function renderEventoCard(v, isHoje){
