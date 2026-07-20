@@ -1164,7 +1164,7 @@ function editarAgendamento(id){
   var user = STATE.usuario;
   var h = USERS[user];
   var podeSelReg = user==='Diretor' || (h && h.equipe && h.equipe.some(function(u){ return POSTOS[u]; }));
-  if(podeSelReg) document.getElementById('reg-regional').value = v.regional;
+  if(podeSelReg) document.getElementById('reg-regional').value = v.usuario||v.regional;
   atualizarPostos();
   document.getElementById('reg-posto').value = (v.regional||v.usuario)+'|'+v.postoFil;
   // Demandas existentes
@@ -1384,6 +1384,11 @@ function salvarVisita(){
   var isMatriz = postoVal === '_matriz|0';
   var partes = postoVal ? postoVal.split('|') : [];
   var reg = isMatriz ? user : (partes[0] || (podeSelReg ? document.getElementById('reg-regional').value : user));
+  // Quem a visita/agendamento pertence: quando dá pra escolher "Regional" (Diretor ou gerente
+  // registrando em nome de alguém da equipe), é a pessoa selecionada — não quem está logado
+  // fazendo o lançamento. Sem isso, o registro ficava preso ao usuário logado e nunca aparecia
+  // na agenda de quem foi selecionado.
+  var quemRegistra = podeSelReg ? (document.getElementById('reg-regional').value || user) : user;
   var fil = partes[1] ? parseInt(partes[1]) : 0;
   var posto = isMatriz ? {nome:'REUNIÃO MATRIZ', fil:0} : (POSTOS[reg]||[]).find(function(p){ return p.fil===fil; });
 
@@ -1414,7 +1419,7 @@ function salvarVisita(){
   }
 
   var v = {
-    id: uid(), usuario: user, regional: reg, postoNome: posto?posto.nome:postoNomeLivre, postoFil: fil||0,
+    id: uid(), usuario: quemRegistra, regional: reg, postoNome: posto?posto.nome:postoNomeLivre, postoFil: fil||0,
     data: data, hora: document.getElementById('reg-hora').value,
     tipo: STATE.tipoReg, demandas: dems,
     obs: document.getElementById('reg-obs').value.trim(),
@@ -1649,7 +1654,7 @@ function confirmarVisita(id, ev){
 
   setTimeout(function(){
     mostrarFormularioCompleto();
-    document.getElementById('reg-regional').value = v.regional;
+    document.getElementById('reg-regional').value = v.usuario||v.regional;
     atualizarPostos();
     document.getElementById('reg-posto').value = (v.regional||v.usuario)+'|'+v.postoFil;
     document.getElementById('reg-data').value = today();
