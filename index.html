@@ -1158,6 +1158,21 @@ function editarAgendamento(id){
   navTo('nova-visita');
 }
 
+// Atalho pro link "➕ Toque para adicionar demandas" no card da Agenda: abre o agendamento
+// já editando e pula direto pra seção de demandas (rolando até ela e focando o campo),
+// sem o usuário precisar rolar manualmente passando por Tipo/Posto/Data.
+function abrirDemandasAgendamento(id, ev){
+  if(ev) ev.stopPropagation();
+  editarAgendamento(id);
+  setTimeout(function(){
+    var card = document.getElementById('card-demandas');
+    if(card) card.scrollIntoView({behavior:'smooth', block:'start'});
+    if(!document.querySelectorAll('#lista-demandas .dem-row').length) addDemanda();
+    var inputs = document.querySelectorAll('#lista-demandas .dem-row .dem-input');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  }, 100);
+}
+
 // Um item de demanda dentro do "Plano de Ação do Posto": status atual + timeline de intervenções (quem, quando, o que foi feito)
 function demandaItemHTML(v, d){
   var icon = d.status==='resolvido'?'✅':d.status==='andamento'?'🔄':'⚠️';
@@ -1573,7 +1588,7 @@ function renderEventoCard(v, isHoje){
     ? (isHoje?'<span class="badge" style="margin-left:auto;background:#fff3e0;color:var(--laranja)">Hoje!</span>':'<span class="badge badge-agendada" style="margin-left:auto">Agend.</span>')
     : (np>0?'<span class="badge badge-pendente" style="margin-left:auto">'+np+' pend.</span>':'<span class="badge badge-ok" style="margin-left:auto">OK</span>');
   var demsInfo = isAgend
-    ? '<div style="font-size:11px;color:var(--txt2);margin-top:4px">'+
+    ? '<div style="font-size:11px;color:var(--txt2);margin-top:4px" onclick="abrirDemandasAgendamento(\''+v.id+'\',event)">'+
         (np>0?'⚠️ '+np+' demanda(s) pendente(s)':
         (v.demandas&&v.demandas.length?'📋 '+v.demandas.length+' demanda(s) registrada(s)':'➕ Toque para adicionar demandas'))+
       '</div>'
