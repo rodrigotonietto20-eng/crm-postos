@@ -1038,6 +1038,13 @@ function doLogin(user){
   // Todos os perfis (inclusive regionais) buscam a nuvem, para ver os próprios
   // dados em qualquer aparelho e não só o que foi criado localmente naquele device.
   fetchDadosDiretor();
+  // E também empurram o que já está salvo localmente — sem isso, dado só sobe pro
+  // servidor depois de um novo salvarVisita()/edição. Reenviar a cada login também
+  // é o que permite recuperar sozinho, sem pedir pra ninguém apertar nada, registros
+  // que a planilha tinha gravado errado antes da correção do mapeamento de campos
+  // do Apps Script (2026-07-21) — assim que a pessoa abrir o app, o dado local
+  // correto sobe de novo pra planilha.
+  sincronizarRegional();
   if(STATE.dirRefreshTimer) clearInterval(STATE.dirRefreshTimer);
   STATE.dirRefreshTimer = setInterval(function(){ fetchDadosDiretor(); }, 2*60*1000);
   requestNotifPermission();
