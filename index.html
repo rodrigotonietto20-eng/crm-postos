@@ -680,7 +680,7 @@ Object.keys(USERS).forEach(function(k){ CORES[k]=USERS[k].cor; });
 var DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 var MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtn7OF7IQ49_rILAzcO-b6U13L3-vo4tlluTQkftXkiIomQ4jxX0rk2zycIF3g2Z7JZA/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwdIog_4j1JVOWDIQPa7DB28cC6Pn92oDHFTq0GDs28y9BebOQyzpk_bi1EOhHhdIyOwA/exec';
 
 var STATE = {
   usuario: null, screen: 'postos', prevScreen: null,
@@ -695,6 +695,14 @@ var POSTOS_DEFAULT = JSON.parse(JSON.stringify(POSTOS));
 function loadPostos(){ try{ var p=JSON.parse(localStorage.getItem('crm_postos')||'null'); return p||POSTOS_DEFAULT; }catch(e){ return POSTOS_DEFAULT; } }
 function savePostos(p){ localStorage.setItem('crm_postos',JSON.stringify(p)); POSTOS=p; }
 POSTOS = loadPostos();
+
+// Envia o catálogo inteiro de postos pro backend (substitui a aba "Postos" na planilha).
+// Diferente das visitas (log de eventos, upsert por id), a lista de postos é um catálogo
+// administrado — sobrescrever tudo de uma vez é suficiente e mais simples que mesclar.
+function syncPostosCloud(p){
+  if(!navigator.onLine) return;
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({postos:p}), headers:{'Content-Type':'application/json'} }).catch(function(){});
+}
 
 function loadData(){
   var u = STATE.usuario;
@@ -873,6 +881,16 @@ function fetchDadosDiretor(onDone){
     .then(function(json){
       if(json.ok && json.visitas){
         localStorage.setItem('crm_dir_cache', JSON.stringify(deduplicarVisitas(json.visitas)));
+        // Catálogo de postos: nuvem manda quando já tem dado (aba "Postos" existente e não-vazia).
+        // Se a nuvem ainda está vazia (aba nova, antes do primeiro sync pós-deploy), semeia com o
+        // catálogo local atual uma única vez — dali em diante a nuvem passa a ser a fonte de verdade
+        // pra todo mundo, inclusive postos adicionados localmente antes desse recurso existir.
+        if(json.postos && Object.keys(json.postos).length){
+          savePostos(json.postos);
+        } else if(!localStorage.getItem('crm_postos_bootstrap')){
+          localStorage.setItem('crm_postos_bootstrap','1');
+          syncPostosCloud(loadPostos());
+        }
         if(el) el.textContent = '✅ Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         if(onDone) onDone();
         else refreshVisibleScreen();
@@ -2230,6 +2248,7 @@ function transferirPosto(regOrigem, idx, regDestino, sel){
   p[regDestino].push(posto);
   p[regDestino].sort(function(a,b){ return a.fil-b.fil; });
   savePostos(p);
+  syncPostosCloud(p);
   renderCfgPostos();
   atualizarPostos();
   toast('✅ '+posto.nome+' transferido para '+fmtReg(regDestino));
@@ -2246,6 +2265,7 @@ function addPostoCfg(){
   p[reg].push({nome:nome, fil:fil});
   p[reg].sort(function(a,b){ return a.fil-b.fil; });
   savePostos(p);
+  syncPostosCloud(p);
   document.getElementById('cfg-novo-nome').value='';
   document.getElementById('cfg-novo-fil').value='';
   renderCfgPostos();
@@ -2258,6 +2278,7 @@ function removerPostoCfg(reg, idx){
   var p = loadPostos();
   p[reg].splice(idx,1);
   savePostos(p);
+  syncPostosCloud(p);
   renderCfgPostos();
   atualizarPostos();
   toast('Posto removido');
