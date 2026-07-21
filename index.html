@@ -722,10 +722,20 @@ function loadData(){
     var local = [];
     try{ local = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
     var visiveisList = visiveisFor(u);
-    // equipe vem do cache; próprios do local
     var doCache = cache.filter(function(v){ var uu = v.usuario||v.regional; return uu && visiveisList.indexOf(uu)>=0 && uu!==u; });
-    var doLocal = local.filter(function(v){ return !v.usuario || v.usuario===u; });
-    return doLocal.concat(doCache);
+    // Mescla por id (local nunca é descartado, mesmo de outro usuário) — como salvarVisita()
+    // grava de volta em crm_v exatamente o que loadData() retornou, filtrar local por "===u"
+    // aqui apagava do aparelho o registro de outro gerente que tivesse logado antes (ex.:
+    // Luiz salva, depois Rodrigo loga no mesmo aparelho e salva — a gravação de Rodrigo
+    // sobrescrevia crm_v sem o registro do Luiz, que sumia até ressincronizar). Downstream
+    // (getByDay, renderPostos, etc.) já refiltra por visiveisFor(), então devolver entradas
+    // de outros usuários aqui é seguro — só evita que sejam perdidas na gravação.
+    var merged = {};
+    doCache.forEach(function(x){ if(x.id) merged[x.id]=x; });
+    local.forEach(function(x){ if(x.id) merged[x.id]=x; });
+    var result = [];
+    Object.keys(merged).forEach(function(k){ result.push(merged[k]); });
+    return result;
   }
   var localOwn = [];
   try{ localOwn = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
