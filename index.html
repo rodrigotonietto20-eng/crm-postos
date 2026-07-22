@@ -280,7 +280,7 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 
     <!-- NÍVEL 1: Diretor -->
     <div style="display:flex;justify-content:center;margin-bottom:0">
-      <button class="login-btn diretor" onclick="doLogin('Diretor')" style="width:220px">
+      <button class="login-btn diretor" onclick="iniciarLogin('Diretor')" style="width:220px">
         <span>👁️ Visão Diretor</span>
       </button>
     </div>
@@ -372,6 +372,10 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
         <button class="login-btn" data-user="Endiel" onclick="iniciarLogin('Endiel')" style="padding:8px 4px">
           <div class="login-av" style="background:#ad1457;width:30px;height:30px;font-size:12px">E</div>
           <span style="font-size:11px">Endiel</span><small>Esp. de Loja</small>
+        </button>
+        <button class="login-btn" data-user="Patricia" onclick="iniciarLogin('Patricia')" style="padding:8px 4px">
+          <div class="login-av" style="background:#00acc1;width:30px;height:30px;font-size:12px">P</div>
+          <span style="font-size:11px">Patricia</span><small>Esp. de Loja</small>
         </button>
       </div>
 
@@ -639,10 +643,10 @@ var POSTOS = {
 
 // Hierarquia completa da organização
 var USERS = {
-  Diretor:   { label:'Diretor',               role:'Direção',                   cor:'#37474f', inicial:'D', equipe:null },
+  Diretor:   { label:'Diretor',               role:'Direção',                   cor:'#37474f', inicial:'D', equipe:null, pin:'0001' },
   Luiz:      { label:'Luiz Lira',             role:'Gerente de Operações',      cor:'#1b5e20', inicial:'L', equipe:['Fabricio','Adelcio','Joao','Edinei','Giovani'], pin:'1001' },
   Rodrigo:   { label:'Rodrigo Pasquali',      role:'Gerente Comercial',         cor:'#0277bd', inicial:'R', equipe:['Josias','Mateus'], todosPostos:true, pin:'2002' },
-  Alisson:   { label:'Alisson Fernandes',     role:'Gerente de Conveniência',   cor:'#6a1b9a', inicial:'A', equipe:['Lisiane','Endiel'], todosPostos:true, pin:'3003' },
+  Alisson:   { label:'Alisson Fernandes',     role:'Gerente de Conveniência',   cor:'#6a1b9a', inicial:'A', equipe:['Lisiane','Endiel','Patricia'], todosPostos:true, pin:'3003' },
   Cassiano:  { label:'Cassiano',              role:'Gestor de Auditoria',       cor:'#ef6c00', inicial:'C', equipe:['JoaoAuditor','Ronai'], todosPostos:true, pin:'4040' },
   Fabricio:  { label:'Fabricio',              role:'Regional',                  cor:'#2e7d32', inicial:'F', equipe:null, pin:'4004' },
   Adelcio:   { label:'Adelcio',               role:'Regional',                  cor:'#00838f', inicial:'A', equipe:null, pin:'5005' },
@@ -653,11 +657,12 @@ var USERS = {
   Mateus:    { label:'Mateus',                role:'Multiplicador',             cor:'#558b2f', inicial:'M', equipe:null, todosPostos:true, pin:'1010' },
   Lisiane:   { label:'Lisiane',               role:'Especialista de Lojas',     cor:'#c62828', inicial:'L', equipe:null, todosPostos:true, pin:'2020' },
   Endiel:    { label:'Endiel',                role:'Especialista de Lojas',     cor:'#6a1b9a', inicial:'E', equipe:null, todosPostos:true, pin:'3030' },
+  Patricia:  { label:'Patricia',              role:'Especialista de Lojas',     cor:'#00acc1', inicial:'P', equipe:null, todosPostos:true, pin:'4050' },
   JoaoAuditor: { label:'João',                role:'Auditor',                   cor:'#1565c0', inicial:'J', equipe:null, todosPostos:true, pin:'5050' },
   Ronai:     { label:'Ronai',                 role:'Auditor',                   cor:'#ef6c00', inicial:'R', equipe:null, todosPostos:true, pin:'6060' },
 };
 
-var METAS_DEFAULT = {Fabricio:25,Adelcio:25,Joao:25,Edinei:25,Giovani:25,Josias:25,Mateus:25,Lisiane:25,Endiel:25,Luiz:25,Rodrigo:25,Alisson:25,Cassiano:25,JoaoAuditor:25,Ronai:25};
+var METAS_DEFAULT = {Fabricio:25,Adelcio:25,Joao:25,Edinei:25,Giovani:25,Josias:25,Mateus:25,Lisiane:25,Endiel:25,Patricia:25,Luiz:25,Rodrigo:25,Alisson:25,Cassiano:25,JoaoAuditor:25,Ronai:25};
 function loadMetas(){ try{ return JSON.parse(localStorage.getItem('crm_metas')||'null')||METAS_DEFAULT; }catch(e){ return METAS_DEFAULT; } }
 function saveMetas(m){ localStorage.setItem('crm_metas',JSON.stringify(m)); }
 
@@ -969,12 +974,11 @@ function getWeekDates(offset){
 
 // ==================== LOGIN ====================
 // ==================== PIN DE LOGIN ====================
-// Todo mundo entra com PIN, menos o Diretor (acessa direto, já vê todo mundo).
+// Todo mundo entra com PIN, inclusive o Diretor (visão de rede inteira é protegida).
 var PIN_BUFFER = '';
 var PIN_TARGET_USER = null;
 
 function iniciarLogin(user){
-  if(user==='Diretor'){ doLogin(user); return; }
   PIN_TARGET_USER = user;
   PIN_BUFFER = '';
   var h = USERS[user];
