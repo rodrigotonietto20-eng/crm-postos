@@ -913,7 +913,7 @@ function refreshVisibleScreen(){
   switch(STATE.screen){
     case 'agenda': renderWeekAgenda(); break;
     case 'postos': renderPostos(); break;
-    case 'posto-detail': if(STATE.currentPostoFil!=null) abrirPosto(STATE.currentPostoFil, STATE.currentPostoRegional); break;
+    case 'posto-detail': if(STATE.currentPostoFil!=null) renderPostoDetail(STATE.currentPostoFil, STATE.currentPostoRegional); break;
   }
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
@@ -1113,7 +1113,13 @@ function navTo(name, btn){
     btn.classList.add('active');
   }
   if(name==='agenda'){ STATE.agendaDay = today(); renderWeekAgenda(); }
-  if(name==='postos') renderPostos();
+  if(name==='postos'){
+    renderPostos();
+    // Busca em segundo plano ao entrar na lista, pra badges/alertas de outros usuários
+    // (ex.: demanda que o Giovani acabou de registrar no celular dele) aparecerem sem
+    // esperar o timer de 2min — mesmo padrão usado em abrirPosto().
+    fetchDadosDiretor(function(){ if(STATE.screen==='postos') renderPostos(); });
+  }
   if(name==='config') renderConfig();
 }
 
@@ -1870,11 +1876,25 @@ function renderPostos(){
   }
 }
 
+// Abre a tela do posto: renderiza na hora com o que já tem em cache local, e dispara
+// uma busca em segundo plano na nuvem pra trazer demandas de outros usuários (ex.: Giovani
+// registrando pelo celular dele) sem precisar de um clique manual em "Atualizar". Sem isso,
+// o Plano de Ação só refletia dado de outra pessoa depois do timer de 2min ou de um novo login.
 function abrirPosto(fil, regional){
   STATE.currentPostoFil = fil;
   STATE.currentPostoRegional = regional;
   STATE.prevScreen = STATE.screen;
   showScreen('posto-detail');
+  renderPostoDetail(fil, regional);
+  fetchDadosDiretor(function(){
+    // Só re-renderiza se o usuário ainda estiver olhando esse mesmo posto (não navegou embora)
+    if(STATE.screen==='posto-detail' && STATE.currentPostoFil===fil && STATE.currentPostoRegional===regional){
+      renderPostoDetail(fil, regional);
+    }
+  });
+}
+
+function renderPostoDetail(fil, regional){
   var posto = (POSTOS[regional]||[]).find(function(p){ return p.fil===fil; });
   var data = loadAllData().filter(function(v){ return v.postoFil===fil; }).sort(function(a,b){ return b.criadoEm-a.criadoEm; });
   var cor = CORES[regional];
