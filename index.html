@@ -1159,9 +1159,10 @@ function setupNovaVisita(){
   var podeSelReg = user==='Diretor' || (h && h.equipe && h.equipe.some(function(u){ return POSTOS[u]; }));
   if(podeSelReg){
     grp.style.display='';
-    // Popula opções com usuários que têm postos
+    // Popula opções com o próprio gerente (pra ele poder registrar/agendar em nome dele mesmo)
+    // + os usuários da equipe que têm postos
     var sel = document.getElementById('reg-regional');
-    var opcoes = user==='Diretor' ? Object.keys(USERS).filter(function(u){ return u!=='Diretor'; }) : (h.equipe||[]).filter(function(u){ return POSTOS[u]; });
+    var opcoes = user==='Diretor' ? Object.keys(USERS).filter(function(u){ return u!=='Diretor'; }) : [user].concat((h.equipe||[]).filter(function(u){ return POSTOS[u]; }));
     sel.innerHTML = opcoes.map(function(u){ return '<option value="'+u+'">'+fmtReg(u)+'</option>'; }).join('');
   } else {
     grp.style.display='none';
@@ -1169,8 +1170,11 @@ function setupNovaVisita(){
   }
   // Mostra dropdown de postos ou campo livre conforme o usuário
   var temTodosPostos = user==='Diretor' || (h && h.todosPostos);
+  // Gerente cuja equipe tem postos próprios (ex. Luiz): vê o dropdown completo do território
+  // da equipe mesmo quando registra em nome dele mesmo (que não tem POSTOS[user] próprio)
+  var gerenciaPostos = h && h.equipe && h.equipe.some(function(u){ return POSTOS[u]; });
   var regAtual = podeSelReg ? document.getElementById('reg-regional').value : user;
-  var temPostos = temTodosPostos || (POSTOS[regAtual]||[]).length > 0;
+  var temPostos = temTodosPostos || gerenciaPostos || (POSTOS[regAtual]||[]).length > 0;
   document.getElementById('grp-posto-sel').classList.toggle('hidden', !temPostos);
   document.getElementById('grp-posto-livre').classList.toggle('hidden', temPostos);
   if(document.getElementById('reg-posto-livre')) document.getElementById('reg-posto-livre').value = '';
@@ -1208,7 +1212,7 @@ function editarAgendamento(id){
   var podeSelReg = user==='Diretor' || (h && h.equipe && h.equipe.some(function(u){ return POSTOS[u]; }));
   if(podeSelReg) document.getElementById('reg-regional').value = v.usuario||v.regional;
   atualizarPostos();
-  document.getElementById('reg-posto').value = (v.regional||v.usuario)+'|'+v.postoFil;
+  document.getElementById('reg-posto').value = v.postoNome==='REUNIÃO MATRIZ' ? '_matriz|0' : (v.regional||v.usuario)+'|'+v.postoFil;
   // Demandas existentes
   document.getElementById('card-demandas').classList.remove('hidden');
   var lista = document.getElementById('lista-demandas');
@@ -1330,11 +1334,15 @@ function atualizarPostos(){
   var h = USERS[user];
   var sel = document.getElementById('reg-posto');
   var temTodosPostos = user==='Diretor' || (h && h.todosPostos);
+  // Gerente cuja equipe tem postos próprios (ex. Luiz): mesmo dropdown agrupado, mas só com o
+  // território da própria equipe — vale tanto pra ele quanto pra seus subordinados selecionados
+  var gerenciaPostos = h && h.equipe && h.equipe.some(function(u){ return POSTOS[u]; });
 
   var matrizOpt = '<option value="_matriz|0">🏢 REUNIÃO MATRIZ</option>';
-  if(temTodosPostos){
-    // Agrupa todos os postos por regional em <optgroup>
-    sel.innerHTML = matrizOpt + Object.keys(POSTOS).map(function(r){
+  if(temTodosPostos || gerenciaPostos){
+    // Agrupa os postos por regional em <optgroup> — rede inteira, ou só a equipe do gerente
+    var regs = temTodosPostos ? Object.keys(POSTOS) : h.equipe.filter(function(u){ return POSTOS[u]; });
+    sel.innerHTML = matrizOpt + regs.map(function(r){
       var opts = (POSTOS[r]||[]).map(function(p){
         return '<option value="'+r+'|'+p.fil+'">'+p.nome+' (Fil. '+p.fil+')</option>';
       }).join('');
