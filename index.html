@@ -1549,6 +1549,17 @@ function excluirRegistroAtual(){
   goBack();
 }
 
+// Botão de excluir direto no card da Agenda (🗑️ no canto do card) — pra apagar na hora
+// uma visita/agendamento lançado por engano, sem precisar abrir o formulário de edição.
+function excluirVisitaCard(id, ev){
+  if(ev){ ev.stopPropagation(); ev.preventDefault(); }
+  if(!confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
+  saveData(loadData().filter(function(v){ return v.id!==id; }));
+  sincronizarRegional();
+  toast('🗑️ Registro excluído');
+  refreshVisibleScreen();
+}
+
 // ==================== AGENDA SEMANAL ====================
 function setAgendaFilter(el){
   document.querySelectorAll('#agenda-tipo-filter .filter-chip').forEach(function(c){ c.classList.remove('active'); });
@@ -1698,6 +1709,7 @@ function renderEventoCard(v, isHoje){
     '<div class="we-posto">'+v.postoNome+'</div>'+
     '<div class="we-reg" style="color:'+cor+'">'+(v.hora?v.hora:'')+'</div>'+
     '</div>'+badgeEl+
+    '<button onclick="excluirVisitaCard(\''+v.id+'\',event)" title="Excluir registro" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;opacity:.5;flex-shrink:0">🗑️</button>'+
     '</div>'+
     demsInfo+
     (v.obs?'<div style="font-size:12px;color:var(--txt2);font-style:italic;margin-top:4px">'+v.obs.slice(0,80)+'</div>':'')+
