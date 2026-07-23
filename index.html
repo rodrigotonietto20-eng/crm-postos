@@ -865,6 +865,13 @@ function normalizarVisita(v){
     v.tipo = v.hora;
     v.hora = '';
   }
+  // Corrige "hora" corrompida vinda da planilha: célula de hora vazia/mal formatada no Sheets
+  // volta do Apps Script como timestamp cheio (ex. "1899-12-30T11:06:28.000Z" — sempre o mesmo
+  // valor, não importa o registro, então não é um horário real) em vez de "HH:MM". Qualquer
+  // valor que não seja "HH:MM" vira vazio, pra não aparecer lixo na Agenda/prévia de login.
+  if(v.hora && typeof v.hora==='string' && !/^\d{1,2}:\d{2}$/.test(v.hora)){
+    v.hora = '';
+  }
   // Qualquer outro valor de tipo (texto solto de versões antigas) vira "visita", preservando o texto como observação
   if(v.tipo!=='visita' && v.tipo!=='agendamento'){
     if(!v.obs && v.tipo) v.obs = v.tipo;
