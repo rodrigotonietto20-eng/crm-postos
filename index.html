@@ -1043,7 +1043,7 @@ function doLogin(user){
   document.getElementById('screen-login').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('bottom-nav').classList.remove('hidden');
-  document.getElementById('user-badge').textContent = fmtReg(user);
+  document.getElementById('user-badge').textContent = fmtReg(user)+' · Sair';
   setupNovaVisita();
   navTo('postos');
   // Todos os perfis (inclusive regionais) buscam a nuvem, para ver os próprios
