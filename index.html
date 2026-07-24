@@ -14,17 +14,19 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --verde:#1b5e20;--verde2:#2e7d32;--verde3:#43a047;--verde-light:#e8f5e9;--verde-deep:#0f3d12;
+  /* Paleta Rede Sander (dourado → vermelho → vinho, do logo) — nomes de variável mantidos
+     (--verde...) por compatibilidade com o resto do CSS, só os valores mudaram. */
+  --verde:#7a1616;--verde2:#a8281f;--verde3:#f2a93c;--verde-light:#fbe9e7;--verde-deep:#3d0f0f;
   --cinza:#607d8b;--cinza2:#eceff1;--cinza3:#b0bec5;
   --laranja:#e65100;--azul:#1565c0;--vermelho:#b71c1c;--roxo:#6a1b9a;
   --txt:#212121;--txt2:#546e7a;
-  --radius:16px;--shadow:0 3px 14px rgba(25,45,35,.10);--shadow-lg:0 10px 28px rgba(15,35,25,.16);
+  --radius:16px;--shadow:0 3px 14px rgba(60,20,15,.10);--shadow-lg:0 10px 28px rgba(50,15,10,.16);
 }
-body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0,#e7edf0 55%,#eef4f0);color:var(--txt);min-height:100vh;padding-bottom:76px}
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#fbf2e9,#f7e9dc 55%,#fbf2e9);color:var(--txt);min-height:100vh;padding-bottom:76px}
 .hidden{display:none!important}
 
 /* HEADER */
-.header{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,var(--verde3),var(--verde));color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px rgba(15,40,20,.28)}
+.header{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,var(--verde3),var(--verde));color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px rgba(70,20,15,.28)}
 .header h1{font-size:16px;font-weight:700;flex:1;letter-spacing:.2px}
 .header .user-badge{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:5px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 6px rgba(0,0,0,.12)}
 .btn-back{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
@@ -34,21 +36,21 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 4px;border:none;background:none;color:var(--txt2);font-size:10px;font-weight:600;gap:2px;cursor:pointer;transition:color .15s}
 .nav-btn.active{color:var(--verde)}
 .nav-btn svg{width:22px;height:22px;stroke-width:1.8;box-sizing:content-box;padding:4px;border-radius:11px;transition:all .15s}
-.nav-btn.active svg{background:var(--verde-light);box-shadow:0 2px 0 #c8e6c9,inset 0 1px 0 rgba(255,255,255,.6)}
+.nav-btn.active svg{background:var(--verde-light);box-shadow:0 2px 0 #eecdc8,inset 0 1px 0 rgba(255,255,255,.6)}
 
 /* CARDS */
 .card{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
 .card-title{font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
 
 /* BUTTONS — estilo 3D "pressionável": face + "lábio" mais escuro embaixo que some ao clicar */
-.btn{--lip:0 4px 0 var(--verde-deep);--lipA:0 1px 0 var(--verde-deep);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:var(--radius);border:none;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--lip),0 6px 14px rgba(15,40,20,.2);transition:transform .08s ease,box-shadow .08s ease}
-.btn:active{transform:translateY(3px);box-shadow:var(--lipA),0 2px 6px rgba(15,40,20,.16)}
+.btn{--lip:0 4px 0 var(--verde-deep);--lipA:0 1px 0 var(--verde-deep);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:var(--radius);border:none;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--lip),0 6px 14px rgba(70,20,15,.2);transition:transform .08s ease,box-shadow .08s ease}
+.btn:active{transform:translateY(3px);box-shadow:var(--lipA),0 2px 6px rgba(70,20,15,.16)}
 .btn-primary{background:linear-gradient(180deg,var(--verde3),var(--verde2));color:#fff}
-.btn-secondary{background:linear-gradient(180deg,#fff,var(--verde-light));color:var(--verde);--lip:0 4px 0 #bfe0c2;--lipA:0 1px 0 #bfe0c2}
+.btn-secondary{background:linear-gradient(180deg,#fff,var(--verde-light));color:var(--verde);--lip:0 4px 0 #eecdc8;--lipA:0 1px 0 #eecdc8}
 .btn-danger{background:linear-gradient(180deg,#fff,#ffebee);color:var(--vermelho);--lip:0 4px 0 #ffb4bb;--lipA:0 1px 0 #ffb4bb}
 .btn-full{width:100%}
 .btn-sm{padding:8px 14px;font-size:12.5px;border-radius:11px;--lip:0 3px 0 var(--verde-deep);--lipA:0 1px 0 var(--verde-deep)}
-.btn-sm.btn-secondary{--lip:0 3px 0 #bfe0c2;--lipA:0 1px 0 #bfe0c2}
+.btn-sm.btn-secondary{--lip:0 3px 0 #eecdc8;--lipA:0 1px 0 #eecdc8}
 .btn-sm.btn-danger{--lip:0 3px 0 #ffb4bb;--lipA:0 1px 0 #ffb4bb}
 .btn-sm:active{transform:translateY(2px)}
 
@@ -62,7 +64,7 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 /* CHIPS */
 .chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .chip{padding:6px 14px;border-radius:20px;border:1.5px solid #ddd;font-size:12px;cursor:pointer;background:#fff;color:var(--txt2);transition:all .15s;font-weight:500}
-.chip.sel{border-color:var(--verde);background:var(--verde-light);color:var(--verde);font-weight:700;box-shadow:0 2px 6px rgba(27,94,32,.18)}
+.chip.sel{border-color:var(--verde);background:var(--verde-light);color:var(--verde);font-weight:700;box-shadow:0 2px 6px rgba(122,22,22,.18)}
 
 /* BADGES */
 .badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
@@ -108,7 +110,7 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
 .filter-row::-webkit-scrollbar{display:none}
 .filter-chip{white-space:nowrap;padding:6px 14px;border-radius:20px;border:1.5px solid #ddd;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--txt2);flex-shrink:0;transition:all .15s}
-.filter-chip.active{background:linear-gradient(180deg,var(--verde3),var(--verde2));color:#fff;border-color:var(--verde2);box-shadow:0 2px 0 var(--verde-deep),0 3px 8px rgba(15,40,20,.2)}
+.filter-chip.active{background:linear-gradient(180deg,var(--verde3),var(--verde2));color:#fff;border-color:var(--verde2);box-shadow:0 2px 0 var(--verde-deep),0 3px 8px rgba(70,20,15,.2)}
 
 /* POSTO CARD */
 .posto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:9px}
@@ -191,8 +193,8 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .login-title{color:#fff;font-size:22px;font-weight:800;margin-bottom:4px;text-align:center}
 .login-sub{color:rgba(255,255,255,.75);font-size:14px;margin-bottom:32px;text-align:center}
 .login-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:340px}
-.login-btn{background:linear-gradient(180deg,#fff,#f3f7f4);border:none;border-radius:var(--radius);padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;box-shadow:0 5px 0 #c3d6c4,0 9px 18px rgba(0,0,0,.24);transition:transform .1s ease,box-shadow .1s ease}
-.login-btn:active{transform:translateY(4px);box-shadow:0 1px 0 #c3d6c4,0 3px 8px rgba(0,0,0,.18)}
+.login-btn{background:linear-gradient(180deg,#fff,#f8f1ea);border:none;border-radius:var(--radius);padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;box-shadow:0 5px 0 #e6cdb9,0 9px 18px rgba(0,0,0,.24);transition:transform .1s ease,box-shadow .1s ease}
+.login-btn:active{transform:translateY(4px);box-shadow:0 1px 0 #e6cdb9,0 3px 8px rgba(0,0,0,.18)}
 .login-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;box-shadow:inset 0 -3px 6px rgba(0,0,0,.22),inset 0 2px 3px rgba(255,255,255,.45),0 2px 5px rgba(0,0,0,.18)}
 .login-btn span{font-size:13px;font-weight:600;color:var(--txt)}
 .login-btn.diretor{grid-column:1/-1;flex-direction:row;justify-content:center;background:linear-gradient(180deg,#ffb74d,#f57c00);color:#fff;border:none;gap:10px;box-shadow:0 5px 0 #c25e00,0 9px 20px rgba(0,0,0,.3)}
@@ -219,8 +221,8 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .pin-dot.filled{background:var(--verde)}
 .pin-error{font-size:12px;color:#c62828;font-weight:600;margin-bottom:10px;text-align:center}
 .pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
-.pin-keypad button{background:linear-gradient(180deg,#fff,var(--verde-light));border:none;border-radius:13px;padding:14px 0;font-size:18px;font-weight:800;color:var(--verde);cursor:pointer;box-shadow:0 3px 0 #bfe0c2,0 4px 8px rgba(0,0,0,.08);transition:transform .08s ease,box-shadow .08s ease}
-.pin-keypad button:active{transform:translateY(3px);background:linear-gradient(180deg,var(--verde3),var(--verde2));color:#fff;box-shadow:0 0 0 #bfe0c2}
+.pin-keypad button{background:linear-gradient(180deg,#fff,var(--verde-light));border:none;border-radius:13px;padding:14px 0;font-size:18px;font-weight:800;color:var(--verde);cursor:pointer;box-shadow:0 3px 0 #eecdc8,0 4px 8px rgba(0,0,0,.08);transition:transform .08s ease,box-shadow .08s ease}
+.pin-keypad button:active{transform:translateY(3px);background:linear-gradient(180deg,var(--verde3),var(--verde2));color:#fff;box-shadow:0 0 0 #eecdc8}
 .pin-key-ghost{background:transparent!important;box-shadow:none!important;cursor:default!important;pointer-events:none}
 
 /* DIRETOR - import cards */
