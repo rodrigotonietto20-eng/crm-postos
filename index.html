@@ -1594,7 +1594,7 @@ function getByDay(){
 
 function renderWeekAgenda(){
   var days = getWeekDates(STATE.weekOffset);
-  var d0 = new Date(days[0]); var d6 = new Date(days[6]);
+  var d0 = parseDateLocal(days[0]); var d6 = parseDateLocal(days[6]);
   document.getElementById('week-title').textContent =
     DIAS[1]+' '+d0.getDate()+'/'+MESES[d0.getMonth()]+' — '+DIAS[6]+' '+d6.getDate()+'/'+MESES[d6.getMonth()];
 
@@ -1781,7 +1781,7 @@ function exportarSemanaWhatsApp(){
   var MESES_EXT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
   // Título da semana
-  var d0 = new Date(days[0]); var d6 = new Date(days[6]);
+  var d0 = parseDateLocal(days[0]); var d6 = parseDateLocal(days[6]);
   var titulo = '📅 *Agenda da Semana*\n'+
     d0.getDate()+'/'+MESES_EXT[d0.getMonth()]+' a '+d6.getDate()+'/'+MESES_EXT[d6.getMonth()]+'\n';
   if(STATE.usuario && STATE.usuario !== 'Diretor') titulo += '👤 '+fmtReg(STATE.usuario)+'\n';
@@ -1793,7 +1793,7 @@ function exportarSemanaWhatsApp(){
   days.forEach(function(ds){
     var evs = (byDay[ds]||[]).filter(function(v){ return v.tipo==='agendamento'; });
     if(!evs.length) return;
-    var d = new Date(ds);
+    var d = parseDateLocal(ds);
     var isHoje = ds === today();
     corpo += '\n*' + DIAS_EXT[d.getDay()] + ', ' + d.getDate() + '/' + MESES_EXT[d.getMonth()] + (isHoje?' (HOJE)':'') + '*\n';
     evs.forEach(function(v){
