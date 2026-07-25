@@ -146,6 +146,8 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .week-day .wd-num{font-size:17px;font-weight:700;margin-top:1px}
 .week-day.today .wd-num{color:var(--verde)}
 .week-day .week-event-card{padding:10px 12px}
+.ferias-badge{background:#fff3e0;color:#e65100;border-left:3px solid #e65100;font-size:11px;font-weight:700;padding:5px 8px;border-radius:6px;margin-bottom:8px}
+.ferias-tag{font-size:11px}
 .week-day .we-posto{font-size:13px}
 .week-events{}
 
@@ -510,6 +512,7 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
       <div class="week-nav-title" id="week-title"></div>
       <button class="btn btn-sm btn-secondary" onclick="changeWeek(1)">Próxima →</button>
     </div>
+    <select id="week-jump-sel" onchange="pularParaSemana(this.value)" style="width:100%;margin-top:10px;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:var(--txt)"></select>
   </div>
   <div id="agenda-tipo-filter" class="period-filter" style="margin-top:4px;display:none">
     <div class="filter-chip active" data-at="agendamento" onclick="setAgendaFilter(this)">📅 Agendamentos</div>
@@ -709,6 +712,19 @@ function syncPostosCloud(p){
   fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({postos:p}), headers:{'Content-Type':'application/json'} }).catch(function(){});
 }
 
+// Férias: períodos em que um usuário informa que está de férias. Catálogo pequeno,
+// sobrescrito inteiro a cada mudança (mesmo padrão de syncPostosCloud), não log de eventos.
+var FERIAS = loadFerias();
+function loadFerias(){ try{ var f=JSON.parse(localStorage.getItem('crm_ferias')||'[]'); return f||[]; }catch(e){ return []; } }
+function saveFerias(f){ localStorage.setItem('crm_ferias',JSON.stringify(f)); FERIAS=f; }
+function syncFeriasCloud(f){
+  if(!navigator.onLine) return;
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ferias:f}), headers:{'Content-Type':'application/json'} }).catch(function(){});
+}
+function estaDeFerias(usuario, ds){
+  return (FERIAS||[]).some(function(f){ return f.usuario===usuario && ds>=f.inicio && ds<=f.fim; });
+}
+
 function loadData(){
   var u = STATE.usuario;
   if(!u) return [];
@@ -903,6 +919,9 @@ function fetchDadosDiretor(onDone){
           localStorage.setItem('crm_postos_bootstrap','1');
           syncPostosCloud(loadPostos());
         }
+        // Férias: nuvem é sempre a fonte de verdade (lista pode legitimamente ficar vazia
+        // depois que alguém remove a última entrada, diferente de Postos que tem catálogo default).
+        if(json.ferias) saveFerias(json.ferias);
         if(el) el.textContent = '✅ Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         if(onDone) onDone();
         else refreshVisibleScreen();
@@ -1617,8 +1636,37 @@ function renderWeekAgenda(){
     }
   } else if(syncBar){ syncBar.remove(); }
 
+  renderWeekJumpSelect(days);
+
   var byDay = getByDay();
   renderWeekStrip(days, byDay);
+}
+
+// Dropdown que lista as segundas-feiras do mês da semana exibida, pra pular direto
+// pra qualquer semana daquele mês (em vez de só avançar/voltar 1 semana por vez) —
+// é o que viabiliza "agendar o mês todo" sem precisar de uma tela de calendário nova.
+function renderWeekJumpSelect(days){
+  var sel = document.getElementById('week-jump-sel');
+  if(!sel) return;
+  var d0 = parseDateLocal(days[0]);
+  var month = d0.getMonth(), year = d0.getFullYear();
+  var mondays = [];
+  var probe = new Date(year, month, 1);
+  while(probe.getDay()!==1) probe.setDate(probe.getDate()+1);
+  while(probe.getMonth()===month){
+    mondays.push(new Date(probe));
+    probe.setDate(probe.getDate()+7);
+  }
+  sel.innerHTML = mondays.map(function(m){
+    var diffDays = Math.round((m - d0)/86400000);
+    var delta = Math.round(diffDays/7);
+    var label = MESES[m.getMonth()]+' — semana de '+String(m.getDate()).padStart(2,'0')+'/'+String(m.getMonth()+1).padStart(2,'0');
+    return '<option value="'+delta+'"'+(delta===0?' selected':'')+'>'+label+'</option>';
+  }).join('');
+}
+
+function pularParaSemana(delta){
+  changeWeek(parseInt(delta,10));
 }
 
 function parseDateLocal(ds){
@@ -1642,29 +1690,48 @@ function renderWeekStrip(days, byDay){
     var d = parseDateLocal(ds);
     var isHoje = ds===today();
     var evs = byDay[ds]||[];
+
+    // Badge de férias é só um aviso visual — não bloqueia agendar, mesmo pro próprio
+    // usuário de férias (alguém pode cobrir, ou ele mesmo agendar algo pontual).
+    var feriasBadgeIndividual = (!temEquipeView && estaDeFerias(STATE.usuario, ds))
+      ? '<div class="ferias-badge">🏖️ Férias</div>' : '';
     var head = '<div class="wd-head">'+
       '<div class="wd-label">'+DIAS[d.getDay()]+(isHoje?' · Hoje':'')+'</div>'+
-      '<div class="wd-num">'+d.getDate()+'</div></div>';
+      '<div class="wd-num">'+d.getDate()+'</div></div>'+feriasBadgeIndividual;
     // Diretor só acompanha (visão sistêmica de todos), não agenda visita pra si mesmo
     var btnAgendar = isDiretor ? '' :
       '<button class="btn btn-primary btn-sm btn-full" style="margin-bottom:8px" onclick="iniciarAgendaDia(\''+ds+'\')">➕ Agendar</button>';
 
+    var grupos = {};
+    evs.slice().sort(function(a,b){
+      return fmtReg(a.usuario||a.regional).localeCompare(fmtReg(b.usuario||b.regional)) || (a.hora||'').localeCompare(b.hora||'');
+    }).forEach(function(v){
+      var k = v.usuario||v.regional;
+      if(!grupos[k]) grupos[k]=[];
+      grupos[k].push(v);
+    });
+
+    // Time em férias sem nenhum evento nesse dia não apareceria em "grupos" (só tem
+    // gente com evento) — mostra também esses, pra quem gerencia equipe saber quem está fora.
+    var feriasSemEvento = '';
+    if(temEquipeView){
+      var jaMostrados = Object.keys(grupos);
+      feriasSemEvento = visiveisFor(STATE.usuario).filter(function(u){
+        return jaMostrados.indexOf(u)<0 && estaDeFerias(u, ds);
+      }).map(function(u){
+        return '<div class="ferias-badge">🏖️ '+fmtReg(u)+'</div>';
+      }).join('');
+    }
+
     var content;
     if(!evs.length){
-      content = '<div class="no-events" style="padding:10px 4px;font-size:12px">'+semLabel+'</div>';
+      content = feriasSemEvento + '<div class="no-events" style="padding:10px 4px;font-size:12px">'+semLabel+'</div>';
     } else if(temEquipeView){
-      var grupos = {};
-      evs.slice().sort(function(a,b){
-        return fmtReg(a.usuario||a.regional).localeCompare(fmtReg(b.usuario||b.regional)) || (a.hora||'').localeCompare(b.hora||'');
-      }).forEach(function(v){
-        var k = v.usuario||v.regional;
-        if(!grupos[k]) grupos[k]=[];
-        grupos[k].push(v);
-      });
-      content = Object.keys(grupos).sort(function(a,b){ return fmtReg(a).localeCompare(fmtReg(b)); }).map(function(k){
+      content = feriasSemEvento + Object.keys(grupos).sort(function(a,b){ return fmtReg(a).localeCompare(fmtReg(b)); }).map(function(k){
         var cor = corUser(k);
+        var feriasTag = estaDeFerias(k, ds) ? ' <span class="ferias-tag">🏖️</span>' : '';
         var cards = grupos[k].map(function(v){ return renderEventoCard(v, isHoje); }).join('');
-        return '<div style="font-size:10px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.4px;margin:0 0 4px">'+fmtReg(k)+'</div>'+cards;
+        return '<div style="font-size:10px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.4px;margin:0 0 4px">'+fmtReg(k)+feriasTag+'</div>'+cards;
       }).join('');
     } else {
       content = evs.map(function(v){ return renderEventoCard(v, isHoje); }).join('');
@@ -2165,8 +2232,62 @@ function renderConfig(){
       '</div></div>';
   }
 
-  div.innerHTML = indHtml + resumoHtml + postoHtml;
+  // Férias — qualquer usuário marca as próprias, Diretor/gerente marca de quem gerencia
+  var feriasHtml = '<div class="card"><div class="card-title">🏖️ Férias</div>'+
+    (todosUsers.length>1 ? '<div class="form-group"><label>Pessoa</label><select id="cfg-ferias-user">'+
+      todosUsers.map(function(u){ return '<option value="'+u+'"'+(u===user?' selected':'')+'>'+fmtReg(u)+'</option>'; }).join('')+
+      '</select></div>' :
+      '<input type="hidden" id="cfg-ferias-user" value="'+(todosUsers[0]||user)+'">')+
+    '<div style="display:flex;gap:8px;margin-bottom:10px">'+
+    '<div class="form-group" style="flex:1;margin-bottom:0"><label>Início</label><input type="date" id="cfg-ferias-inicio"></div>'+
+    '<div class="form-group" style="flex:1;margin-bottom:0"><label>Fim</label><input type="date" id="cfg-ferias-fim"></div>'+
+    '</div>'+
+    '<button class="btn btn-primary btn-sm btn-full" onclick="addFeriasCfg()" style="margin-bottom:12px">+ Marcar Férias</button>'+
+    '<div id="cfg-ferias-list"></div></div>';
+
+  div.innerHTML = indHtml + resumoHtml + postoHtml + feriasHtml;
   if(regsComPostos.length) renderCfgPostos();
+  renderCfgFeriasList(todosUsers);
+}
+
+function renderCfgFeriasList(todosUsers){
+  var list = document.getElementById('cfg-ferias-list');
+  if(!list) return;
+  var hoje = today();
+  var itens = loadFerias().filter(function(f){ return todosUsers.indexOf(f.usuario)>=0 && f.fim>=hoje; })
+    .sort(function(a,b){ return a.inicio.localeCompare(b.inicio); });
+  list.innerHTML = itens.length ? itens.map(function(f){
+    return '<div class="reg-import-card" style="align-items:center">'+
+      '<div class="reg-import-av" style="background:'+corUser(f.usuario)+'">'+((USERS[f.usuario]&&USERS[f.usuario].inicial)||f.usuario[0])+'</div>'+
+      '<div class="reg-import-body" style="flex:1">'+
+      '<div class="reg-import-name">'+fmtReg(f.usuario)+'</div>'+
+      '<div style="font-size:12px;color:var(--txt2)">'+fmtDate(f.inicio)+' — '+fmtDate(f.fim)+'</div>'+
+      '</div>'+
+      '<button class="btn btn-danger btn-sm" onclick="removerFeriasCfg(\''+f.id+'\')">🗑️</button>'+
+      '</div>';
+  }).join('') : '<div style="font-size:12px;color:var(--txt2)">Nenhuma férias marcada</div>';
+}
+
+function addFeriasCfg(){
+  var usuario = document.getElementById('cfg-ferias-user').value;
+  var inicio = document.getElementById('cfg-ferias-inicio').value;
+  var fim = document.getElementById('cfg-ferias-fim').value;
+  if(!inicio || !fim){ toast('Informe início e fim'); return; }
+  if(fim < inicio){ toast('Data fim antes do início'); return; }
+  var arr = loadFerias();
+  arr.push({ id: uid(), usuario: usuario, inicio: inicio, fim: fim, criadoPor: STATE.usuario, criadoEm: Date.now() });
+  saveFerias(arr);
+  syncFeriasCloud(arr);
+  toast('🏖️ Férias marcadas');
+  renderConfig();
+}
+
+function removerFeriasCfg(id){
+  var arr = loadFerias().filter(function(f){ return f.id!==id; });
+  saveFerias(arr);
+  syncFeriasCloud(arr);
+  toast('Férias removidas');
+  renderConfig();
 }
 
 // ==================== INDICADORES ====================
