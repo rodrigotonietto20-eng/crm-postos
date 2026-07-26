@@ -1199,6 +1199,12 @@ function doLogout(){
   document.getElementById('app').classList.add('hidden');
   document.getElementById('bottom-nav').classList.add('hidden');
   document.getElementById('screen-login').classList.remove('hidden');
+  // Sem isso, a prévia de agenda dos cards (tela de apresentação) ficava presa no que foi
+  // lido no carregamento da página — quem tivesse acabado de criar/editar um agendamento
+  // só veria isso refletido lá depois de recarregar o app inteiro. Re-renderiza na hora,
+  // com os dados locais que já estão atualizados (salvarVisita/excluirVisitaCard já
+  // gravaram em crm_v antes do logout ser possível).
+  renderLoginAgendamentos();
 }
 
 // ==================== NAV ====================
