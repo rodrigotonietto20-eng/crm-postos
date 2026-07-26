@@ -2592,7 +2592,8 @@ function renderLoginAgendamentos(){
   document.querySelectorAll('[data-user]').forEach(function(btn){
     var user = btn.dataset.user;
     var meus = agendSem.filter(function(v){ return (v.usuario||v.regional)===user; });
-    if(!meus.length) return;
+    var feriasAtiva = (loadFerias()||[]).find(function(f){ return f.usuario===user && hoje>=f.inicio && hoje<=f.fim; });
+    if(!meus.length && !feriasAtiva) return;
     // No máximo 1 posto por turno (manhã/tarde) em cada dia — evita mostrar vários postos
     // acumulados no mesmo dia por engano de cadastro. Ordena por horário para escolher
     // de forma previsível qual fica quando há mais de um agendamento no mesmo turno.
@@ -2609,6 +2610,10 @@ function renderLoginAgendamentos(){
     // PEDROTTI" quebravam linha e deixavam o organograma de login alto demais no celular.
     var lblFil = function(it){ return !it.fil ? 'Matriz' : 'Fil.'+it.fil; };
     var html = '<div class="login-sched" style="width:100%;margin-top:6px;text-align:left;border-top:1px solid rgba(0,0,0,.07);padding-top:5px;font-size:10px">';
+    if(feriasAtiva){
+      html += '<div style="background:#fff3e0;border-left:4px solid #e65100;border-radius:6px;padding:3px 7px;margin-bottom:4px">'+
+        '<span style="font-weight:800;font-size:10px;color:#e65100">🏖️ De férias até '+fmtDate(feriasAtiva.fim)+'</span></div>';
+    }
     Object.keys(porDia).sort().forEach(function(d){
       var p = parseDateLocal(d);
       var isHoje = d===hoje;
@@ -2644,6 +2649,7 @@ document.addEventListener('DOMContentLoaded', function(){
       .then(function(json){
         if(json.ok && json.visitas){
           localStorage.setItem('crm_dir_cache', JSON.stringify(deduplicarVisitas(json.visitas)));
+          if(json.ferias) saveFerias(json.ferias);
           renderLoginAgendamentos();
         }
       }).catch(function(){});
