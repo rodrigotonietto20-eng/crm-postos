@@ -247,10 +247,9 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .meta-bar-wrap{margin-top:4px}
 .meta-bar-bg{height:7px;border-radius:4px;background:var(--cinza2);overflow:hidden;margin-top:5px}
 .meta-bar-fill{height:100%;border-radius:4px;background:var(--verde3);transition:width .5s}
+#meta-visitas-agenda-list>div:last-child{border-bottom:none}
 
 /* PHOTO */
-.photo-thumb{width:100%;height:160px;border-radius:10px;object-fit:cover;margin-top:8px;display:block}
-.photo-placeholder{width:100%;border:2px dashed var(--cinza3);border-radius:10px;padding:20px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--txt2);font-size:13px;cursor:pointer;margin-top:6px;background:#fafafa}
 
 /* NOTIF BADGE */
 .nav-btn{position:relative}
@@ -508,13 +507,6 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
       <label>Observações Gerais</label>
       <textarea id="reg-obs" placeholder="Anotações sobre a visita..."></textarea>
     </div>
-    <div class="form-group" id="grp-foto">
-      <label>Foto do Posto</label>
-      <div class="photo-placeholder" id="foto-placeholder" onclick="document.getElementById('reg-foto').click()">📷 Tirar foto ou escolher imagem</div>
-      <input type="file" id="reg-foto" accept="image/*" capture="environment" class="hidden" onchange="previewFoto(this)">
-      <img id="reg-foto-preview" class="photo-thumb hidden" alt="foto">
-      <button id="reg-foto-remove" class="btn btn-danger btn-sm hidden" onclick="removerFoto()" style="margin-top:6px;width:100%">✕ Remover foto</button>
-    </div>
   </div>
 
   <button class="btn btn-primary btn-full" onclick="salvarVisita()" style="margin-bottom:12px">💾 Salvar Registro</button>
@@ -523,6 +515,10 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 
 <!-- AGENDA SEMANAL -->
 <div id="screen-agenda" class="section hidden">
+  <div class="card" id="card-meta-visitas-agenda" style="padding:14px;display:none">
+    <div class="card-title" style="margin-bottom:6px">🎯 Meta de Visitas — <span id="meta-visitas-mes-label"></span></div>
+    <div id="meta-visitas-agenda-list"></div>
+  </div>
   <div class="card" style="padding:14px">
     <div class="week-nav">
       <button class="btn btn-sm btn-secondary" onclick="changeWeek(-1)">← Anterior</button>
@@ -1037,35 +1033,6 @@ function fmtDate(d){ if(!d) return '—'; var p=d.split('-'); return p[2]+'/'+p[
 
 function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); },2500); }
 
-// ==================== FOTO ====================
-function previewFoto(input){
-  var file=input.files[0]; if(!file) return;
-  var reader=new FileReader();
-  reader.onload=function(e){
-    var img=new Image();
-    img.onload=function(){
-      var canvas=document.createElement('canvas');
-      var MAX=800; var ratio=Math.min(MAX/img.width,MAX/img.height,1);
-      canvas.width=Math.round(img.width*ratio); canvas.height=Math.round(img.height*ratio);
-      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-      var compressed=canvas.toDataURL('image/jpeg',0.72);
-      var prev=document.getElementById('reg-foto-preview');
-      prev.src=compressed; prev.classList.remove('hidden');
-      document.getElementById('foto-placeholder').classList.add('hidden');
-      document.getElementById('reg-foto-remove').classList.remove('hidden');
-    };
-    img.src=e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-function removerFoto(){
-  document.getElementById('reg-foto').value='';
-  document.getElementById('reg-foto-preview').src='';
-  document.getElementById('reg-foto-preview').classList.add('hidden');
-  document.getElementById('foto-placeholder').classList.remove('hidden');
-  document.getElementById('reg-foto-remove').classList.add('hidden');
-}
-
 function localDateStr(d){
   var yyyy = d.getFullYear();
   var mm = String(d.getMonth()+1).padStart(2,'0');
@@ -1277,7 +1244,6 @@ function setupNovaVisita(){
   document.getElementById('lista-demandas').innerHTML = '';
   document.getElementById('chk-sem-demanda').checked = false;
   toggleSemDemanda(document.getElementById('chk-sem-demanda'));
-  removerFoto();
   STATE.tipoReg = 'visita';
   var user = STATE.usuario;
   var grp = document.getElementById('grp-regional');
@@ -1626,15 +1592,15 @@ function salvarVisita(){
     criadoEm: Date.now()
   };
 
-  var fotoEl=document.getElementById('reg-foto-preview');
-  v.foto=(!fotoEl.classList.contains('hidden')&&fotoEl.src&&fotoEl.src.startsWith('data:'))?fotoEl.src:null;
-
   var arr = loadData();
   if(STATE.editandoId){
     var idx = arr.findIndex(function(x){ return x.id===STATE.editandoId; });
     if(idx>=0){
       v.id = STATE.editandoId;
       v.criadoEm = arr[idx].criadoEm;
+      // Campo de foto foi removido do formulário, mas registros antigos que já tinham uma
+      // foto capturada continuam guardando ela — só preserva, nunca mais grava foto nova.
+      v.foto = arr[idx].foto || null;
       arr[idx] = v;
     } else { arr.push(v); }
     STATE.editandoId = null;
@@ -1756,9 +1722,41 @@ function renderWeekAgenda(){
 
   renderWeekJumpSelect(days);
   renderFeriasListAgenda();
+  renderMetaVisitasAgenda();
 
   var byDay = getByDay();
   renderWeekStrip(days, byDay);
+}
+
+// Meta de visitas do mês, bem visível no topo da Agenda — uma linha por pessoa dentro da
+// alçada de quem está logado (visiveisFor: só a própria pra regional/auditor, self+equipe
+// pra gerente, rede inteira pro Diretor). Sempre mês corrente até hoje (mesmo padrão já
+// usado no card de Metas de Config/Indicadores), recalculado na hora — não é um contador
+// acumulado, então vira sozinho no mês seguinte.
+function renderMetaVisitasAgenda(){
+  var card = document.getElementById('card-meta-visitas-agenda');
+  var user = STATE.usuario;
+  var visiveisList = visiveisFor(user);
+  if(!visiveisList.length){ card.style.display = 'none'; return; }
+  card.style.display = '';
+  var metas = loadMetas();
+  var mesAtual = today().slice(0,7);
+  document.getElementById('meta-visitas-mes-label').textContent = mesAtual.slice(5)+'/'+mesAtual.slice(0,4);
+  var data = loadData();
+  var rows = visiveisList.map(function(u){
+    var visitesMes = data.filter(function(v){ return (v.usuario||v.regional)===u && v.tipo==='visita' && (v.data||'').slice(0,7)===mesAtual; }).length;
+    var meta = metas[u]||10;
+    var pct = Math.min(100, Math.round(visitesMes/meta*100));
+    var cor = pct>=100?'var(--verde)':pct>=60?'var(--azul)':'var(--laranja)';
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--cinza2)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+      '<span style="font-size:13px;font-weight:700;color:'+corUser(u)+'">'+fmtReg(u)+'</span>'+
+      '<span style="font-size:13px;font-weight:800;color:var(--txt)">'+visitesMes+'/'+meta+' <span style="color:'+cor+'">('+pct+'%)</span></span>'+
+      '</div>'+
+      '<div class="meta-bar-bg"><div class="meta-bar-fill" style="width:'+pct+'%;background:'+cor+'"></div></div>'+
+      '</div>';
+  }).join('');
+  document.getElementById('meta-visitas-agenda-list').innerHTML = rows;
 }
 
 // Dropdown que lista as segundas-feiras do mês da semana exibida, pra pular direto
