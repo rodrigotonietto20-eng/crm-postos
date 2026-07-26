@@ -196,6 +196,10 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .login-btn{background:linear-gradient(180deg,#fff,#f3f7f4);border:none;border-radius:var(--radius);padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;box-shadow:0 5px 0 #c3d6c4,0 9px 18px rgba(0,0,0,.24);transition:transform .1s ease,box-shadow .1s ease}
 .login-btn:active{transform:translateY(4px);box-shadow:0 1px 0 #c3d6c4,0 3px 8px rgba(0,0,0,.18)}
 .login-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;box-shadow:inset 0 -3px 6px rgba(0,0,0,.22),inset 0 2px 3px rgba(255,255,255,.45),0 2px 5px rgba(0,0,0,.18)}
+.login-sched .dia-row{display:flex;align-items:flex-start;gap:6px;padding:2px 0}
+.login-sched .dia-label{font-weight:700;color:#b0bec5;min-width:30px;flex-shrink:0;padding-top:2px;font-size:10px}
+.login-sched .dia-pills{display:flex;flex-wrap:wrap;gap:3px;flex:1;min-width:0}
+.login-sched .dia-pill{background:#eceff1;color:#607d8b;border-radius:7px;padding:1px 6px;font-size:9px;font-weight:700;white-space:nowrap}
 .login-btn span{font-size:13px;font-weight:600;color:var(--txt)}
 .login-btn.diretor{grid-column:1/-1;flex-direction:row;justify-content:center;background:linear-gradient(180deg,#ffb74d,#f57c00);color:#fff;border:none;gap:10px;box-shadow:0 5px 0 #c25e00,0 9px 20px rgba(0,0,0,.3)}
 .login-btn.diretor:active{box-shadow:0 1px 0 #c25e00,0 3px 10px rgba(0,0,0,.25)}
@@ -2705,7 +2709,12 @@ function renderLoginAgendamentos(){
           html += '<div style="border-left:4px solid #e65100;padding:2px 6px;margin-bottom:3px;color:#e65100;font-weight:700">HOJE · '+diaLabel+' — sem visita</div>';
         }
       } else {
-        html += '<div style="padding:1px 0;color:#90a4ae;line-height:1.4"><span style="font-weight:700;color:#b0bec5;min-width:32px;display:inline-block">'+diaLabel+'</span> '+itens.map(lblFil).join(' · ')+'</div>';
+        // Cada compromisso vira um "pill" próprio (flex-wrap), em vez de texto corrido
+        // separado por "·" — dias cheios (ex. alguém com 4 compromissos no mesmo dia)
+        // quebravam numa única linha densa e difícil de ler; assim cada item fica
+        // visualmente separado e a linha só cresce em altura, não em confusão.
+        var pills = itens.map(function(it){ return '<span class="dia-pill">'+lblFil(it)+'</span>'; }).join('');
+        html += '<div class="dia-row"><span class="dia-label">'+diaLabel+'</span><div class="dia-pills">'+pills+'</div></div>';
       }
     });
     html += '</div>';
