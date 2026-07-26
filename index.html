@@ -1784,7 +1784,7 @@ function renderWeekStrip(days, byDay){
     var btnAgendar = isDiretor ? '' :
       '<div style="display:flex;gap:6px;margin-bottom:8px">'+
       '<button class="btn btn-primary btn-sm" style="flex:1" onclick="iniciarAgendaDia(\''+ds+'\')">➕ Agendar</button>'+
-      '<button class="btn btn-secondary btn-sm" style="flex:0 0 auto;padding:0 10px" onclick="abrirFeriasModal(\''+ds+'\')" title="Marcar férias">🏖️</button>'+
+      '<button class="btn btn-sm" style="flex:0 0 auto;padding:0 12px;background:linear-gradient(180deg,#ff9800,#e65100);color:#fff;box-shadow:0 3px 0 #a84600" onclick="abrirFeriasModal(\''+ds+'\')" title="Marcar férias">🏖️</button>'+
       '</div>';
 
     var grupos = {};
