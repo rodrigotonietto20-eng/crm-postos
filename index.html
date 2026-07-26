@@ -830,7 +830,13 @@ function loadData(){
     var local = [];
     try{ local = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
     var visiveisList = visiveisFor(u);
-    var doCache = cache.filter(function(v){ var uu = v.usuario||v.regional; return uu && visiveisList.indexOf(uu)>=0 && uu!==u; });
+    // Antes excluía os próprios itens do cache (uu!==u) — a ideia era que o próprio gerente
+    // sempre teria seus dados mais atuais em local (crm_v). Mas isso escondia da tela (e da
+    // exportação WhatsApp) qualquer agendamento/demanda que o PRÓPRIO gerente tivesse criado
+    // ou editado em OUTRO aparelho/sessão — ficava só na nuvem, nunca aparecia aqui. Corrigido
+    // incluindo os próprios itens do cache também; o merge abaixo (local por último) já garante
+    // que uma edição local ainda não sincronizada continua vencendo em caso de mesmo id.
+    var doCache = cache.filter(function(v){ var uu = v.usuario||v.regional; return uu && visiveisList.indexOf(uu)>=0; });
     // Mescla por id (local nunca é descartado, mesmo de outro usuário) — como salvarVisita()
     // grava de volta em crm_v exatamente o que loadData() retornou, filtrar local por "===u"
     // aqui apagava do aparelho o registro de outro gerente que tivesse logado antes (ex.:
