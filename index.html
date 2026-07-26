@@ -2672,18 +2672,17 @@ function renderLoginAgendamentos(){
     var meus = agendSem.filter(function(v){ return (v.usuario||v.regional)===user; });
     var feriasAtiva = (loadFerias()||[]).find(function(f){ return f.usuario===user && hoje>=f.inicio && hoje<=f.fim; });
     if(!meus.length && !feriasAtiva) return;
-    // No máximo 1 posto por turno (manhã/tarde) em cada dia — evita mostrar vários postos
-    // acumulados no mesmo dia por engano de cadastro. Ordena por horário para escolher
-    // de forma previsível qual fica quando há mais de um agendamento no mesmo turno.
+    // Lista TODOS os agendamentos do dia (antes limitava a 1 por turno manhã/tarde e
+    // descartava silenciosamente qualquer segundo compromisso do mesmo turno — escondia
+    // casos reais como duas visitas legítimas no mesmo dia). Ordena por horário.
     meus = meus.slice().sort(function(a,b){ return (a.hora||'').localeCompare(b.hora||''); });
     var porDia = {};
     meus.forEach(function(v){
-      if(!porDia[v.data]) porDia[v.data] = {manha:null, tarde:null};
+      if(!porDia[v.data]) porDia[v.data] = [];
       var nome = (v.postoNome||'').trim();
-      var periodo = (v.hora && v.hora>='12:00') ? 'tarde' : 'manha';
-      if(!porDia[v.data][periodo]) porDia[v.data][periodo] = {nome:nome, hora:v.hora||'', fil:v.postoFil};
+      porDia[v.data].push({nome:nome, hora:v.hora||'', fil:v.postoFil});
     });
-    if(!porDia[hoje]) porDia[hoje] = {manha:null, tarde:null};
+    if(!porDia[hoje]) porDia[hoje] = [];
     // Só o número da filial (não o nome completo do posto) — nomes longos tipo "GRAMADO
     // PEDROTTI" quebravam linha e deixavam o organograma de login alto demais no celular.
     var lblFil = function(it){ return !it.fil ? 'Matriz' : 'Fil.'+it.fil; };
@@ -2696,7 +2695,7 @@ function renderLoginAgendamentos(){
       var p = parseDateLocal(d);
       var isHoje = d===hoje;
       var diaLabel = DIAS_ABREV[p.getDay()]+' '+p.getDate();
-      var itens = ['manha','tarde'].map(function(per){ return porDia[d][per]; }).filter(Boolean);
+      var itens = porDia[d];
       if(isHoje){
         if(itens.length){
           // Fundo claro + texto escuro/laranja saturado: contraste bem mais alto do que
