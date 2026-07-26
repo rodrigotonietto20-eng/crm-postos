@@ -981,7 +981,11 @@ function deduplicarVisitas(arr){
 }
 
 function fetchDadosDiretor(onDone){
-  var el = document.getElementById('dir-sync-status');
+  // Era 'dir-sync-status' — id de uma tela Dashboard removida faz tempo (ver memória);
+  // o span de fato usado na Agenda hoje é 'agenda-sync-status'. Com o id errado, o botão
+  // "Atualizar" buscava e aplicava os dados normalmente, só nunca mostrava nenhum feedback
+  // visual (nem "Atualizando..." nem "Atualizado às HH:MM") — parecia não fazer nada.
+  var el = document.getElementById('agenda-sync-status');
   if(el) el.textContent = '🔄 Atualizando...';
   fetch(SCRIPT_URL+'?t='+Date.now())
     .then(function(r){ return r.json(); })
