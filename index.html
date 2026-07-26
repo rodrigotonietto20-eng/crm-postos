@@ -515,10 +515,6 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 
 <!-- AGENDA SEMANAL -->
 <div id="screen-agenda" class="section hidden">
-  <div class="card" id="card-meta-visitas-agenda" style="padding:14px;display:none">
-    <div class="card-title" style="margin-bottom:6px">🎯 Meta de Visitas — <span id="meta-visitas-mes-label"></span></div>
-    <div id="meta-visitas-agenda-list"></div>
-  </div>
   <div class="card" style="padding:14px">
     <div class="week-nav">
       <button class="btn btn-sm btn-secondary" onclick="changeWeek(-1)">← Anterior</button>
@@ -536,6 +532,10 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
   <div class="card" style="padding:14px;margin-bottom:10px">
     <div class="card-title" style="margin-bottom:8px">🏖️ Férias</div>
     <div id="ferias-list-agenda"></div>
+  </div>
+  <div class="card" id="card-meta-visitas-agenda" style="padding:14px;margin-bottom:10px;display:none">
+    <div class="card-title" style="margin-bottom:6px">🎯 Meta de Visitas — <span id="meta-visitas-mes-label"></span></div>
+    <div id="meta-visitas-agenda-list"></div>
   </div>
   <div style="padding:4px 0 12px">
     <button class="btn btn-secondary btn-full" onclick="exportarSemanaWhatsApp()" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25d366;color:#fff;border:none;font-size:13px;padding:13px">
