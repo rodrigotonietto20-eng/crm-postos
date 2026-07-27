@@ -28,6 +28,10 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .header h1{font-size:16px;font-weight:700;flex:1;letter-spacing:.2px}
 .header .user-badge{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:5px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 6px rgba(0,0,0,.12)}
 .btn-back{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+.header-sync-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);border-radius:50%;width:32px;height:32px;color:#fff;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 6px rgba(0,0,0,.12)}
+.header-sync-btn:active{transform:scale(.9)}
+.header-sync-btn.spinning{animation:spin-sync .8s linear infinite}
+@keyframes spin-sync{to{transform:rotate(360deg)}}
 
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #eceff1;display:flex;box-shadow:0 -4px 18px rgba(0,0,0,.08)}
@@ -197,9 +201,9 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .login-btn:active{transform:translateY(4px);box-shadow:0 1px 0 #c3d6c4,0 3px 8px rgba(0,0,0,.18)}
 .login-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;box-shadow:inset 0 -3px 6px rgba(0,0,0,.22),inset 0 2px 3px rgba(255,255,255,.45),0 2px 5px rgba(0,0,0,.18)}
 .login-sched .dia-row{display:flex;align-items:flex-start;gap:6px;padding:2px 0}
-.login-sched .dia-label{font-weight:700;color:#b0bec5;min-width:30px;flex-shrink:0;padding-top:2px;font-size:10px}
+.login-sched .dia-label{font-weight:700;color:#000;min-width:30px;flex-shrink:0;padding-top:2px;font-size:10px}
 .login-sched .dia-pills{display:flex;flex-wrap:wrap;gap:3px;flex:1;min-width:0}
-.login-sched .dia-pill{background:#eceff1;color:#607d8b;border-radius:7px;padding:1px 6px;font-size:9px;font-weight:700;white-space:nowrap}
+.login-sched .dia-pill{background:#eceff1;color:#000;border-radius:7px;padding:1px 6px;font-size:9px;font-weight:700;white-space:nowrap}
 .login-btn span{font-size:13px;font-weight:600;color:var(--txt)}
 .login-btn.diretor{grid-column:1/-1;flex-direction:row;justify-content:center;background:linear-gradient(180deg,#ffb74d,#f57c00);color:#fff;border:none;gap:10px;box-shadow:0 5px 0 #c25e00,0 9px 20px rgba(0,0,0,.3)}
 .login-btn.diretor:active{box-shadow:0 1px 0 #c25e00,0 3px 10px rgba(0,0,0,.25)}
@@ -451,6 +455,7 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 <div class="header" id="app-header">
   <button class="btn-back hidden" id="btn-back" onclick="goBack()">←</button>
   <h1 id="header-title">Plano de Ação</h1>
+  <button class="header-sync-btn" id="btn-header-sync" onclick="sincronizarManual()" title="Sincronizar agora">🔄</button>
   <div class="user-badge" id="user-badge" onclick="doLogout()">Sair</div>
 </div>
 
@@ -519,6 +524,10 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 
 <!-- AGENDA SEMANAL -->
 <div id="screen-agenda" class="section hidden">
+  <div class="card" id="card-minha-sync" style="padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;background:#e8f5e9">
+    <span style="flex:1;font-size:12px;color:var(--verde2)" id="minha-sync-status">☁️ Sincronização</span>
+    <button onclick="sincronizarManual()" style="background:var(--verde);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 Sincronizar agora</button>
+  </div>
   <div class="card" style="padding:14px">
     <div class="week-nav">
       <button class="btn btn-sm btn-secondary" onclick="changeWeek(-1)">← Anterior</button>
@@ -922,16 +931,21 @@ function updateSyncPendingBar(){
 }
 
 function renderSyncManualInfo(){
-  var el = document.getElementById('sync-manual-info'); if(!el) return;
   var lastSync = localStorage.getItem('crm_last_sync_'+STATE.usuario);
-  el.textContent = lastSync ? 'Última sincronização: '+new Date(parseInt(lastSync)).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : 'Nunca sincronizou';
+  var texto = lastSync ? 'Última sincronização: '+new Date(parseInt(lastSync)).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : 'Nunca sincronizou';
+  var el = document.getElementById('sync-manual-info');
+  if(el) el.textContent = texto;
+  var elAgenda = document.getElementById('minha-sync-status');
+  if(elAgenda) elAgenda.textContent = '☁️ '+texto;
 }
 function sincronizarManual(){
   var btn = document.getElementById('btn-sync-manual');
+  var btnHeader = document.getElementById('btn-header-sync');
   var data = loadData();
   if(!data.length){ toast('Nenhum dado para sincronizar'); return; }
   if(!navigator.onLine){ toast('⚠️ Sem conexão — tente novamente online'); localStorage.setItem('crm_sync_pending','1'); updateSyncPendingBar(); return; }
   if(btn){ btn.disabled=true; btn.textContent='🔄 Sincronizando...'; }
+  if(btnHeader){ btnHeader.disabled=true; btnHeader.classList.add('spinning'); }
   fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({visitas:data}), headers:{'Content-Type':'application/json'} })
     .then(function(){
       localStorage.removeItem('crm_sync_pending');
@@ -947,6 +961,7 @@ function sincronizarManual(){
     })
     .finally(function(){
       if(btn){ btn.disabled=false; btn.textContent='🔄 Sincronizar agora'; }
+      if(btnHeader){ btnHeader.disabled=false; btnHeader.classList.remove('spinning'); }
     });
 }
 
@@ -1727,6 +1742,7 @@ function renderWeekAgenda(){
   renderWeekJumpSelect(days);
   renderFeriasListAgenda();
   renderMetaVisitasAgenda();
+  renderSyncManualInfo();
 
   var byDay = getByDay();
   renderWeekStrip(days, byDay);
