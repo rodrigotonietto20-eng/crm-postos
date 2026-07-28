@@ -1675,18 +1675,23 @@ function removerDaCacheDir(id){
   }catch(e){}
 }
 
+// Backend ganhou endpoint de exclusão de verdade (2026-07-28, ver excluirVisitaId no
+// apps_script.gs) — sem isso, a linha continuava existindo na planilha e voltava a
+// aparecer pra qualquer aparelho que buscasse dados novos da nuvem depois.
+function excluirVisitaRemota(id){
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({excluirVisitaId:id}), headers:{'Content-Type':'application/json'} }).catch(function(){});
+}
+
 // Exclui o registro que está sendo editado (só disponível reabrindo um agendamento/visita já
-// existente, nunca num registro novo). Remove do armazenamento local do usuário logado e tenta
-// sincronizar em seguida — como o backend do Sheets faz upsert por id (nunca recebe uma ação de
-// "excluir"), isso garante que o registro suma da visão deste usuário/aparelho, mas não há
-// garantia de que a linha correspondente seja removida da planilha remota.
+// existente, nunca num registro novo). Remove do local + cache e avisa o backend pra apagar
+// a linha de verdade da planilha (ver excluirVisitaRemota).
 function excluirRegistroAtual(){
   if(!STATE.editandoId) return;
   if(!confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
   var id = STATE.editandoId;
   saveData(loadData().filter(function(v){ return v.id!==id; }));
   removerDaCacheDir(id);
-  sincronizarRegional();
+  excluirVisitaRemota(id);
   toast('🗑️ Registro excluído');
   STATE.editandoId = null;
   goBack();
@@ -1699,7 +1704,7 @@ function excluirVisitaCard(id, ev){
   if(!confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
   saveData(loadData().filter(function(v){ return v.id!==id; }));
   removerDaCacheDir(id);
-  sincronizarRegional();
+  excluirVisitaRemota(id);
   toast('🗑️ Registro excluído');
   refreshVisibleScreen();
 }
