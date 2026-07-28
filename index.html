@@ -1348,6 +1348,9 @@ function abrirDemandasAgendamento(id, ev){
 // (2026-07-28, pedido do usuário: "retire o status da demanda... coloque nos itens").
 function demandaItemHTML(v, d){
   var elId = 'pa-'+v.id+'-'+d.id;
+  // Card fica amarelo quando quem registrou a visita não é o gerente de área (regional/equipe
+  // interagindo com o posto) — pedido do usuário pra bater o olho na diferença (2026-07-28).
+  var deEquipe = !isGerenteArea(v.usuario||v.regional);
   var checklist = d.checklist||[];
   // Ícone/contagem do cabeçalho é só um resumo calculado a partir dos itens — não dá mais
   // pra clicar e mudar direto na demanda. Sem itens ainda, cai no d.status antigo (demandas
@@ -1416,7 +1419,7 @@ function demandaItemHTML(v, d){
     '<input type="text" placeholder="+ observação sobre esta demanda..." style="flex:1;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--cinza2)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();adicionarChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+elId+'\',this);}">'+
     '<button type="button" onclick="adicionarChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+elId+'\',this.previousElementSibling)" class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);white-space:nowrap">Adicionar</button>'+
     '</div></div>';
-  return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:#fafafa">'+
+  return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:'+(deEquipe?'#fff9c4':'#fafafa')+'">'+
     '<div style="display:flex;align-items:flex-start;gap:6px">'+
     '<span style="font-size:15px">'+icon+'</span>'+
     '<div style="flex:1;min-width:0">'+
@@ -1472,11 +1475,10 @@ function planoAcaoHTML(postoFil, excluirId){
     var deEquipe = !isGerenteArea(v.usuario);
     var header = '<div style="font-size:12px;font-weight:700;color:var(--txt2);padding:8px 0 4px;border-bottom:1px solid var(--cinza2);margin-bottom:6px">'+
       (v.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+' · '+fmtReg(v.usuario||v.regional)+
-      (deEquipe?' <span style="background:#ede7f6;color:#5e35b1;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:4px">👤 EQUIPE</span>':'')+
+      (deEquipe?' <span style="background:#fff9c4;color:#8d6e00;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:4px">👤 EQUIPE</span>':'')+
       '</div>';
     var demsHtml = (v.demandas||[]).map(function(d){ return demandaItemHTML(v, d); }).join('');
-    var destaque = deEquipe ? 'border-left:3px solid #5e35b1;background:#f7f5fc;border-radius:8px;padding:0 6px 4px' : '';
-    return '<div style="margin-bottom:12px;'+destaque+'">'+header+demsHtml+'</div>';
+    return '<div style="margin-bottom:12px">'+header+demsHtml+'</div>';
   }).join('');
   return {totalDems:totalDems, totalVisitas:anteriores.length, html:html};
 }
