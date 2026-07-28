@@ -1338,17 +1338,28 @@ function abrirDemandasAgendamento(id, ev){
   }, 100);
 }
 
-// Um item de demanda dentro do "Plano de Ação do Posto": status atual + timeline de intervenções (quem, quando, o que foi feito)
+// Um item de demanda dentro do "Plano de Ação do Posto". A demanda em si (d.desc) é só
+// título/categoria — quem carrega status (Pendente/Andamento/Resolvida) com botão e histórico
+// é cada item do checklist dentro dela (ver itensChecklist), não mais a demanda inteira
+// (2026-07-28, pedido do usuário: "retire o status da demanda... coloque nos itens").
 function demandaItemHTML(v, d){
-  var icon = d.status==='resolvido'?'✅':d.status==='andamento'?'🔄':'⚠️';
   var elId = 'pa-'+v.id+'-'+d.id;
-  var btns = d.status!=='resolvido'
-    ? '<div style="display:flex;gap:4px;margin-top:6px">'+
-        '<button class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+v.id+'\',\''+d.id+'\',\'resolvido\',\''+elId+'\')">✅ Resolvida</button>'+
-        (d.status!=='andamento'?'<button class="btn btn-sm" style="background:#e3f2fd;color:var(--azul);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+v.id+'\',\''+d.id+'\',\'andamento\',\''+elId+'\')">🔄 Andamento</button>':'')+
-        (d.status!=='pendente'?'<button class="btn btn-sm" style="background:#fff3e0;color:var(--laranja);padding:5px 8px;font-size:11px" onclick="atualizarStatusDemanda(\''+v.id+'\',\''+d.id+'\',\'pendente\',\''+elId+'\')">⚠️ Pendente</button>':'')+
-      '</div>'
-    : '';
+  var checklist = d.checklist||[];
+  // Ícone/contagem do cabeçalho é só um resumo calculado a partir dos itens — não dá mais
+  // pra clicar e mudar direto na demanda. Sem itens ainda, cai no d.status antigo (demandas
+  // criadas antes dessa mudança, ou registradas sem nenhum item de checklist).
+  var resolvidos = checklist.filter(function(c){ return c.status==='resolvido'; }).length;
+  var emAndamento = checklist.filter(function(c){ return c.status==='andamento'; }).length;
+  var icon, resumo;
+  if(checklist.length){
+    icon = resolvidos===checklist.length ? '✅' : emAndamento>0 ? '🔄' : '⚠️';
+    resumo = '<span class="badge" style="font-size:10px;padding:2px 6px;background:#eee;color:var(--txt2)">'+resolvidos+'/'+checklist.length+' resolvido(s)</span>';
+  } else {
+    icon = d.status==='resolvido'?'✅':d.status==='andamento'?'🔄':'⚠️';
+    resumo = '<span class="badge badge-'+d.status+'" style="font-size:10px;padding:2px 6px">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span>';
+  }
+  // Histórico antigo da demanda (de quando o status ainda era editado aqui) — só leitura,
+  // preservado pra não perder o registro de intervenções já feitas antes dessa mudança.
   var timeline = (d.historico||[]).slice().reverse().map(function(hEntry){
     var quando = new Date(hEntry.em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     var statusTxt = hEntry.status==='resolvido'?'Resolvido':hEntry.status==='andamento'?'Em andamento':'Pendente';
@@ -1363,29 +1374,48 @@ function demandaItemHTML(v, d){
   if(d.prazo) w2h.push('📅 prazo '+fmtDate(d.prazo));
   if(d.hora) w2h.push('🕐 '+d.hora);
   var w2hHtml = w2h.length ? '<div style="font-size:11px;color:var(--txt2);margin-top:3px">'+w2h.join(' · ')+'</div>' : '';
-  // Checklist de observações da demanda: cada observação vira um item com checkbox próprio
-  // (em vez de um único campo de texto livre), pra marcar pendências pequenas uma a uma.
-  var itensChecklist = (d.checklist||[]).map(function(c){
-    return '<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:'+(c.feito?'#e8f5e9':'#f5f5f5')+';border-radius:6px;padding:5px 8px;margin-top:4px">'+
-      '<input type="checkbox" '+(c.feito?'checked':'')+' onchange="toggleChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',this.checked,\''+elId+'\')" style="width:15px;height:15px;flex-shrink:0">'+
-      '<span style="flex:1;'+(c.feito?'text-decoration:line-through;color:var(--txt2)':'')+'">'+c.texto+'</span>'+
+  // Cada item do checklist tem seu próprio status (Pendente/Andamento/Resolvida), com botão
+  // e histórico — mesmo mecanismo que antes ficava só na demanda inteira.
+  var itensChecklist = checklist.map(function(c){
+    var cIcon = c.status==='resolvido'?'✅':c.status==='andamento'?'🔄':'⚠️';
+    var cBtns = c.status!=='resolvido'
+      ? '<div style="display:flex;gap:4px;margin-top:4px">'+
+          '<button class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);padding:3px 6px;font-size:10px" onclick="atualizarStatusChecklistItem(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',\'resolvido\',\''+elId+'\')">✅ Resolvida</button>'+
+          (c.status!=='andamento'?'<button class="btn btn-sm" style="background:#e3f2fd;color:var(--azul);padding:3px 6px;font-size:10px" onclick="atualizarStatusChecklistItem(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',\'andamento\',\''+elId+'\')">🔄 Andamento</button>':'')+
+          (c.status!=='pendente'?'<button class="btn btn-sm" style="background:#fff3e0;color:var(--laranja);padding:3px 6px;font-size:10px" onclick="atualizarStatusChecklistItem(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',\'pendente\',\''+elId+'\')">⚠️ Pendente</button>':'')+
+        '</div>'
+      : '';
+    var cTimeline = (c.historico||[]).slice().reverse().map(function(hEntry){
+      var quando = new Date(hEntry.em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      var statusTxt = hEntry.status==='resolvido'?'Resolvido':hEntry.status==='andamento'?'Em andamento':'Pendente';
+      return '<div style="font-size:10px;color:var(--txt2);padding:3px 0;border-top:1px dashed var(--cinza2)">'+
+        '<strong style="color:var(--txt)">'+fmtReg(hEntry.usuario)+'</strong> · '+quando+' · '+statusTxt+
+        (hEntry.nota?'<br>'+hEntry.nota:'')+
+        '</div>';
+    }).join('');
+    return '<div style="background:'+(c.status==='resolvido'?'#f1f8e9':c.status==='andamento'?'#e3f2fd':'#fff8e1')+';border-radius:6px;padding:6px 8px;margin-top:4px">'+
+      '<div style="display:flex;align-items:center;gap:6px">'+
+      '<span style="font-size:12px">'+cIcon+'</span>'+
+      '<span style="flex:1;font-size:12px;'+(c.status==='resolvido'?'text-decoration:line-through;color:var(--txt2)':'')+'">'+c.texto+'</span>'+
       '<button type="button" onclick="removerChecklistItem(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',\''+elId+'\')" style="border:none;background:none;color:var(--txt2);cursor:pointer;font-size:12px;padding:0 2px">✕</button>'+
-      '</label>';
+      '</div>'+
+      cBtns+
+      (cTimeline?'<div style="margin-top:4px">'+cTimeline+'</div>':'')+
+      '</div>';
   }).join('');
   var checklistHtml = '<div style="margin-top:6px">'+itensChecklist+
     '<div style="display:flex;gap:6px;margin-top:4px">'+
     '<input type="text" placeholder="+ observação sobre esta demanda..." style="flex:1;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--cinza2)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();adicionarChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+elId+'\',this);}">'+
     '<button type="button" onclick="adicionarChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+elId+'\',this.previousElementSibling)" class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);white-space:nowrap">Adicionar</button>'+
     '</div></div>';
-  return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:'+(d.status==='resolvido'?'#f1f8e9':d.status==='andamento'?'#e3f2fd':'#fff8e1')+'">'+
+  return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:#fafafa">'+
     '<div style="display:flex;align-items:flex-start;gap:6px">'+
     '<span style="font-size:15px">'+icon+'</span>'+
     '<div style="flex:1;min-width:0">'+
     '<div style="font-size:13px;font-weight:600">'+d.desc+'</div>'+
-    '<div style="font-size:11px;color:var(--txt2)">registrado por <strong style="color:var(--txt)">'+fmtReg(v.usuario||v.regional)+'</strong> · <span class="badge badge-'+d.status+'" style="font-size:10px;padding:2px 6px">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span></div>'+
+    '<div style="font-size:11px;color:var(--txt2)">registrado por <strong style="color:var(--txt)">'+fmtReg(v.usuario||v.regional)+'</strong> · '+resumo+'</div>'+
     w2hHtml+
     (timeline?'<div style="margin-top:6px">'+timeline+'</div>':'')+
-    btns+
     checklistHtml+
     '</div></div></div>';
 }
@@ -1416,33 +1446,22 @@ function syncVisitaUnica(v){
   fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({visitas:[v]}), headers:{'Content-Type':'application/json'} }).catch(function(){});
 }
 
-function atualizarStatusDemanda(visitaId, demandaId, novoStatus, elId){
+// Status (Pendente/Andamento/Resolvida) morava na demanda inteira; passou a ficar em cada
+// item do checklist (2026-07-28) — a demanda no topo virou só título/categoria, quem marca
+// progresso agora é cada item individual dentro dela.
+function atualizarStatusChecklistItem(visitaId, demandaId, itemId, novoStatus, elId){
   var nota = prompt('O que foi feito? (deixe em branco pra pular, Cancelar não altera o status)');
   if(nota===null) return;
-  // Busca em crm_v (próprio) primeiro, depois em crm_dir_cache (outros usuários)
-  var arr = []; try{ arr = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
-  var v = arr.find(function(x){ return x.id===visitaId; });
-  var proprio = !!v;
-  if(!v){
-    var cache = []; try{ cache = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){}
-    v = cache.find(function(x){ return x.id===visitaId; });
-    if(!v) return;
-  }
-  var d = (v.demandas||[]).find(function(x){ return x.id===demandaId; });
-  if(!d) return;
-  d.status = novoStatus;
-  d.historico = d.historico||[];
-  d.historico.push({status:novoStatus, nota:nota||'', usuario:STATE.usuario, em:Date.now()});
-  if(proprio){
-    localStorage.setItem('crm_v', JSON.stringify(arr));
-    sincronizarRegional();
-  } else {
-    localStorage.setItem('crm_dir_cache', JSON.stringify(cache));
-    syncVisitaUnica(v);
-  }
-  // Re-renderiza só o elemento alterado
+  var res = mutarDemanda(visitaId, demandaId, function(d){
+    var item = (d.checklist||[]).find(function(c){ return c.id===itemId; });
+    if(!item) return;
+    item.status = novoStatus;
+    item.historico = item.historico||[];
+    item.historico.push({status:novoStatus, nota:nota||'', usuario:STATE.usuario, em:Date.now()});
+  });
+  if(!res) return;
   var el = document.getElementById(elId);
-  if(el) el.outerHTML = demandaItemHTML(v, d);
+  if(el) el.outerHTML = demandaItemHTML(res.v, res.d);
   toast(novoStatus==='resolvido'?'✅ Marcada como resolvida':novoStatus==='andamento'?'🔄 Em andamento':'⚠️ Mantida como pendente');
 }
 
@@ -1484,17 +1503,7 @@ function adicionarChecklistDemanda(visitaId, demandaId, elId, inputEl){
   if(!texto) return;
   var res = mutarDemanda(visitaId, demandaId, function(d){
     if(!d.checklist) d.checklist = [];
-    d.checklist.push({id:uid(), texto:texto, feito:false});
-  });
-  if(!res) return;
-  var el = document.getElementById(elId);
-  if(el) el.outerHTML = demandaItemHTML(res.v, res.d);
-}
-
-function toggleChecklistDemanda(visitaId, demandaId, itemId, feito, elId){
-  var res = mutarDemanda(visitaId, demandaId, function(d){
-    var item = (d.checklist||[]).find(function(c){ return c.id===itemId; });
-    if(item) item.feito = feito;
+    d.checklist.push({id:uid(), texto:texto, status:'pendente'});
   });
   if(!res) return;
   var el = document.getElementById(elId);
