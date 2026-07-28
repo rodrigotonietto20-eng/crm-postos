@@ -1629,8 +1629,14 @@ function salvarVisita(){
   var arr = loadData();
   if(STATE.editandoId){
     var idx = arr.findIndex(function(x){ return x.id===STATE.editandoId; });
+    // Bug encontrado 2026-07-28: quando o registro original não estava no loadData() deste
+    // aparelho (ex.: editado num aparelho cujo crm_dir_cache ainda não tinha esse id), o "else"
+    // abaixo empurrava v com um id novo (gerado lá em cima) em vez do id que estava sendo
+    // editado — criava um registro duplicado do zero e deixava o antigo intacto na planilha,
+    // sem nunca ser atualizado nem excluído. v.id agora é sempre fixado no id original, achando
+    // ou não a cópia local — assim o upsert por id do backend sempre sobrescreve a mesma linha.
+    v.id = STATE.editandoId;
     if(idx>=0){
-      v.id = STATE.editandoId;
       v.criadoEm = arr[idx].criadoEm;
       // Campo de foto foi removido do formulário, mas registros antigos que já tinham uma
       // foto capturada continuam guardando ela — só preserva, nunca mais grava foto nova.
