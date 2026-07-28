@@ -2210,10 +2210,36 @@ function renderPostos(){
       '</div>';
   };
 
+  // Card "🏢 REUNIÃO MATRIZ" na grade, só pra gerente de área (Luiz/Rodrigo/Alisson/Cassiano/
+  // Diretor) — a opção já existia no dropdown de posto da Agenda, isso só dá um atalho pra
+  // abrir o Plano de Ação/histórico das reuniões na matriz direto da grade (2026-07-28).
+  var matrizTexto = 'reunião matriz';
+  var mostraMatriz = isGerenteArea(user) && (!search || matrizTexto.includes(search));
+  var matrizSection = '';
+  if(mostraMatriz){
+    var visMatriz = allData.filter(function(v){ return v.postoFil===0; });
+    var ultMatriz = visMatriz.slice().sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); })[0];
+    var npMatriz = visMatriz.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
+    var matrizCard = '<div class="posto-card" style="'+(npMatriz>0?'background:#fff9c4':'')+'" onclick="abrirPosto(0,\''+user+'\')">'+
+      '<div class="posto-card-top">'+
+      '<div class="posto-num" style="background:#455a6422;color:#455a64;font-size:16px">🏢</div>'+
+      (npMatriz>0?'<span class="badge badge-pendente">'+npMatriz+'</span>':'')+
+      '</div>'+
+      '<div class="posto-name">REUNIÃO MATRIZ</div>'+
+      '<div class="posto-meta">'+(ultMatriz?'Última: '+fmtDate(ultMatriz.data):'Sem visitas')+'</div>'+
+      '</div>';
+    matrizSection = '<div style="display:flex;align-items:center;gap:6px;margin:14px 0 6px;padding-left:2px">'+
+      '<div style="width:8px;height:8px;border-radius:50%;background:#455a64;flex-shrink:0"></div>'+
+      '<div style="font-size:12px;font-weight:800;color:#455a64;text-transform:uppercase;letter-spacing:.5px">Geral</div>'+
+      '<div style="flex:1;height:1px;background:#e0e0e0"></div>'+
+      '</div>'+
+      '<div class="posto-grid">'+matrizCard+'</div>';
+  }
+
   if(regs.length > 1){
     // Quem enxerga mais de uma pessoa (Diretor/gerentes): agrupa os postos por usuário,
     // mesmo padrão visual já usado no agrupamento por pessoa da tela Agenda.
-    list.innerHTML = regs.map(function(r){
+    list.innerHTML = matrizSection + regs.map(function(r){
       var postosR = (POSTOS[r]||[]).filter(function(p){
         return !search || p.nome.toLowerCase().includes(search) || String(p.fil).includes(search);
       });
@@ -2255,26 +2281,31 @@ function abrirPosto(fil, regional){
 }
 
 function renderPostoDetail(fil, regional){
-  var posto = (POSTOS[regional]||[]).find(function(p){ return p.fil===fil; });
+  // "REUNIÃO MATRIZ" usa o mesmo fil=0 de sempre, mas ganha tratamento de posto de verdade
+  // (título próprio, Plano de Ação habilitado) em vez do "Posto 0" genérico/sem plano de ação
+  // que fil=0 tinha antes — pedido do usuário pra ter um card clicável de Matriz também na
+  // grade de postos dos gerentes de área (2026-07-28).
+  var isMatriz = fil===0;
+  var posto = isMatriz ? {nome:'REUNIÃO MATRIZ', fil:0} : (POSTOS[regional]||[]).find(function(p){ return p.fil===fil; });
   var data = loadAllData().filter(function(v){ return v.postoFil===fil; }).sort(function(a,b){ return b.criadoEm-a.criadoEm; });
-  var cor = CORES[regional];
+  var cor = isMatriz ? '#455a64' : CORES[regional];
   var totalDems = data.reduce(function(acc,v){ return acc+(v.demandas||[]).length; },0);
   var totalPend = data.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
   document.getElementById('pd-header').innerHTML =
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'+
-    '<div style="width:50px;height:50px;border-radius:12px;background:'+cor+'22;color:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px">'+fil+'</div>'+
+    '<div style="width:50px;height:50px;border-radius:12px;background:'+cor+'22;color:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px">'+(isMatriz?'🏢':fil)+'</div>'+
     '<div><div style="font-weight:800;font-size:16px">'+(posto?posto.nome:'Posto '+fil)+'</div>'+
-    '<div style="font-size:13px;color:var(--txt2)">'+fmtReg(regional)+' · Filial '+fil+'</div></div></div>'+
+    '<div style="font-size:13px;color:var(--txt2)">'+(isMatriz?'Reuniões e compromissos na matriz':fmtReg(regional)+' · Filial '+fil)+'</div></div></div>'+
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">'+
     '<div style="background:var(--verde-light);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--verde)">'+data.length+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">VISITAS</div></div>'+
     '<div style="background:#fff3e0;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--laranja)">'+totalPend+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">PENDENTES</div></div>'+
     '<div style="background:var(--cinza2);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--cinza)">'+totalDems+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">DEMANDAS</div></div>'+
     '</div>'+
-    (fil>0 ? '<button class="btn btn-primary btn-full btn-sm" onclick="iniciarVisitaPosto('+fil+',\''+regional+'\')" style="margin-top:12px">➕ Nova Visita neste Posto</button>' : '');
+    (fil>0||isMatriz ? '<button class="btn btn-primary btn-full btn-sm" onclick="iniciarVisitaPosto('+fil+',\''+regional+'\')" style="margin-top:12px">➕ Nova '+(isMatriz?'Reunião na Matriz':'Visita neste Posto')+'</button>' : '');
 
   var cardPlano = document.getElementById('card-pd-plano');
   var rPlano = planoAcaoHTML(fil, null);
-  if(fil>0){
+  if(fil>0||isMatriz){
     cardPlano.classList.remove('hidden');
     document.getElementById('pd-plano-count').textContent = rPlano.totalVisitas ? (rPlano.totalDems+' demanda(s) em '+rPlano.totalVisitas+' visita(s)') : '';
     document.getElementById('pd-plano').innerHTML = rPlano.totalVisitas ? rPlano.html : '<div style="text-align:center;color:var(--txt2);font-size:13px;padding:12px 0">Nenhuma demanda registrada ainda</div>';
@@ -2329,7 +2360,7 @@ function iniciarVisitaPosto(fil, regional){
   var podeSelReg = STATE.usuario==='Diretor' || (h && h.equipe && h.equipe.some(function(u){ return POSTOS[u]; }));
   if(podeSelReg) document.getElementById('reg-regional').value = regional;
   atualizarPostos();
-  document.getElementById('reg-posto').value = regional+'|'+fil;
+  document.getElementById('reg-posto').value = fil===0 ? '_matriz|0' : regional+'|'+fil;
   onPostoChanged();
   navTo('nova-visita');
 }
