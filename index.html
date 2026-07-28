@@ -2624,6 +2624,7 @@ function renderCfgPostos(){
       '<div style="display:flex;align-items:center;gap:8px">'+
       '<div style="width:32px;height:32px;border-radius:8px;background:'+cor+'22;color:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">'+p.fil+'</div>'+
       '<div style="flex:1;font-size:13px;font-weight:600">'+p.nome+'</div>'+
+      '<button onclick="editarNomePostoCfg(\''+reg+'\','+i+')" style="background:none;border:none;color:var(--azul);font-size:14px;cursor:pointer;padding:0 4px;line-height:1" title="Editar nome">✏️</button>'+
       '<button onclick="removerPostoCfg(\''+reg+'\','+i+')" style="background:none;border:none;color:#ef5350;font-size:18px;cursor:pointer;padding:0 4px;line-height:1" title="Remover">×</button>'+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;padding-left:40px">'+
@@ -2670,6 +2671,25 @@ function addPostoCfg(){
   renderCfgPostos();
   atualizarPostos();
   toast('✅ Posto adicionado!');
+}
+
+// Só corrige o nome no catálogo (POSTOS) — visitas/agendamentos já registrados guardam seu
+// próprio postoNome (snapshot da hora do registro) e continuam mostrando o nome antigo no
+// histórico, mesmo padrão já usado em transferirPosto() (que também não reescreve o passado).
+function editarNomePostoCfg(reg, idx){
+  var p = loadPostos();
+  var posto = p[reg][idx];
+  if(!posto) return;
+  var novoNome = prompt('Nome do posto:', posto.nome);
+  if(novoNome===null) return;
+  novoNome = novoNome.trim().toUpperCase();
+  if(!novoNome){ toast('Nome não pode ficar vazio'); return; }
+  posto.nome = novoNome;
+  savePostos(p);
+  syncPostosCloud(p);
+  renderCfgPostos();
+  atualizarPostos();
+  toast('✅ Nome atualizado');
 }
 
 function removerPostoCfg(reg, idx){
