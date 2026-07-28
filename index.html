@@ -705,6 +705,10 @@ function visiveisFor(u){
 function corUser(u){ return (USERS[u]&&USERS[u].cor)||'#607d8b'; }
 // Label de um usuário
 function fmtReg(u){ return (USERS[u]&&USERS[u].label)||u; }
+// "Gerente de área" = tem equipe (Luiz/Rodrigo/Alisson/Cassiano) ou é o Diretor. Usado no
+// Plano de Ação pra destacar quando quem interagiu com o posto foi um regional/equipe, não o
+// próprio gerente (2026-07-28, pedido do usuário).
+function isGerenteArea(u){ return u==='Diretor' || !!(USERS[u] && USERS[u].equipe); }
 
 var CORES = {}; // mantido por compatibilidade — preenchido abaixo
 Object.keys(USERS).forEach(function(k){ CORES[k]=USERS[k].cor; });
@@ -1421,7 +1425,35 @@ function demandaItemHTML(v, d){
     w2hHtml+
     (timeline?'<div style="margin-top:6px">'+timeline+'</div>':'')+
     checklistHtml+
-    '</div></div></div>';
+    '</div>'+
+    '<button type="button" title="Excluir esta demanda (registrada errada)" onclick="removerDemanda(\''+v.id+'\',\''+d.id+'\')" style="border:none;background:none;color:#c62828;cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0">🗑️</button>'+
+    '</div></div>';
+}
+
+// Exclui a demanda inteira (não só um item do checklist) do Plano de Ação — usado quando o
+// usuário registrou a demanda errada por engano. Igual ao lookup do mutarDemanda, mas aqui
+// quem some é a própria demanda (não dá pra usar mutator em cima de um "d" que vai deixar de existir).
+function removerDemanda(visitaId, demandaId){
+  if(!confirm('Excluir esta demanda inteira? Isso remove o item e todo o checklist dela, não dá pra desfazer.')) return;
+  var arr = []; try{ arr = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
+  var v = arr.find(function(x){ return x.id===visitaId; });
+  var proprio = !!v;
+  var cache = [];
+  if(!v){
+    try{ cache = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){}
+    v = cache.find(function(x){ return x.id===visitaId; });
+    if(!v) return;
+  }
+  v.demandas = (v.demandas||[]).filter(function(d){ return d.id!==demandaId; });
+  if(proprio){
+    localStorage.setItem('crm_v', JSON.stringify(arr));
+    sincronizarRegional();
+  } else {
+    localStorage.setItem('crm_dir_cache', JSON.stringify(cache));
+    syncVisitaUnica(v);
+  }
+  toast('🗑️ Demanda excluída');
+  if(STATE.currentPostoFil!=null && STATE.currentPostoRegional!=null) renderPostoDetail(STATE.currentPostoFil, STATE.currentPostoRegional);
 }
 
 // Plano de Ação do Posto: documento único, reúne TODAS as demandas de TODOS os usuários que já
@@ -1435,10 +1467,16 @@ function planoAcaoHTML(postoFil, excluirId){
   if(!anteriores.length) return {totalDems:0, totalVisitas:0, html:''};
   var totalDems = anteriores.reduce(function(s,v){ return s+(v.demandas||[]).length; },0);
   var html = anteriores.map(function(v){
+    // Destaque quando quem interagiu com o posto não é o gerente de área (é regional/equipe) —
+    // pedido do usuário pra bater o olho e ver diferença entre atividade da equipe e do gerente.
+    var deEquipe = !isGerenteArea(v.usuario);
     var header = '<div style="font-size:12px;font-weight:700;color:var(--txt2);padding:8px 0 4px;border-bottom:1px solid var(--cinza2);margin-bottom:6px">'+
-      (v.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+' · '+fmtReg(v.usuario||v.regional)+'</div>';
+      (v.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+' · '+fmtReg(v.usuario||v.regional)+
+      (deEquipe?' <span style="background:#ede7f6;color:#5e35b1;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:4px">👤 EQUIPE</span>':'')+
+      '</div>';
     var demsHtml = (v.demandas||[]).map(function(d){ return demandaItemHTML(v, d); }).join('');
-    return '<div style="margin-bottom:12px">'+header+demsHtml+'</div>';
+    var destaque = deEquipe ? 'border-left:3px solid #5e35b1;background:#f7f5fc;border-radius:8px;padding:0 6px 4px' : '';
+    return '<div style="margin-bottom:12px;'+destaque+'">'+header+demsHtml+'</div>';
   }).join('');
   return {totalDems:totalDems, totalVisitas:anteriores.length, html:html};
 }
