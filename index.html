@@ -1243,7 +1243,7 @@ function atualizarLabelDemandas(){
   if(lbl) lbl.textContent = STATE.tipoReg==='agendamento' ? '📋 Demandas a serem tratadas' : '📋 Demandas Tratadas';
 }
 
-// Reexibe Tipo/Dados, escondidos pelo atalho abrirDemandasAgendamento()
+// Garante Tipo/Dados visíveis ao abrir o formulário do zero
 function mostrarFormularioCompleto(){
   document.getElementById('card-tipo-registro').classList.remove('hidden');
   document.getElementById('card-dados').classList.remove('hidden');
@@ -1330,18 +1330,6 @@ function editarAgendamento(id){
 // Atalho pro link "➕ Toque para adicionar demandas" no card da Agenda: abre o agendamento já
 // editando, mas escondendo Tipo/Dados/Observações-Foto — a visita já está definida (é este
 // agendamento específico), só falta listar o que precisa ser feito.
-function abrirDemandasAgendamento(id, ev){
-  if(ev) ev.stopPropagation();
-  editarAgendamento(id);
-  document.getElementById('card-tipo-registro').classList.add('hidden');
-  document.getElementById('card-dados').classList.add('hidden');
-  if(!document.querySelectorAll('#lista-demandas .dem-row').length) addDemanda();
-  setTimeout(function(){
-    var inputs = document.querySelectorAll('#lista-demandas .dem-row .dem-input');
-    if(inputs.length) inputs[inputs.length-1].focus();
-  }, 100);
-}
-
 // Um item de demanda dentro do "Plano de Ação do Posto". A demanda em si (d.desc) é só
 // título/categoria — quem carrega status (Pendente/Andamento/Resolvida) com botão e histórico
 // é cada item do checklist dentro dela (ver itensChecklist), não mais a demanda inteira
@@ -2048,23 +2036,19 @@ function iniciarAgendaDia(ds){
   navTo('nova-visita');
 }
 
+// Card da Agenda mostra só o agendamento/visita em si (posto, hora, status) — sem nenhuma
+// informação de demanda, que é assunto do Plano de Ação (2026-07-28, pedido do usuário
+// "tirar as demandas, deixar somente a agenda").
 function renderEventoCard(v, isHoje){
   var cor = corUser(v.usuario||v.regional);
   var isAgend = v.tipo==='agendamento';
-  var np = (v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length;
   // Diretor só acompanha (visão sistêmica), não confirma visita — ação operacional de quem vai a campo
   var btnConfirmar = isAgend && isHoje && STATE.usuario!=='Diretor' ?
     '<button class="btn btn-primary btn-sm" style="margin-top:10px;width:100%" onclick="confirmarVisita(\''+v.id+'\',event)">✅ Confirmar Visita Realizada</button>' : '';
   var icone = isAgend ? '📅' : '✅';
   var badgeEl = isAgend
     ? (isHoje?'<span class="badge" style="margin-left:auto;background:#fff3e0;color:var(--laranja)">Hoje!</span>':'<span class="badge badge-agendada" style="margin-left:auto">Agend.</span>')
-    : (np>0?'<span class="badge badge-pendente" style="margin-left:auto">'+np+' pend.</span>':'<span class="badge badge-ok" style="margin-left:auto">OK</span>');
-  var demsInfo = isAgend
-    ? '<div style="font-size:11px;color:var(--txt2);margin-top:4px" onclick="abrirDemandasAgendamento(\''+v.id+'\',event)">'+
-        (np>0?'⚠️ '+np+' demanda(s) pendente(s)':
-        (v.demandas&&v.demandas.length?'📋 '+v.demandas.length+' demanda(s) registrada(s)':'➕ Toque para adicionar demandas'))+
-      '</div>'
-    : ((v.demandas||[]).length?'<div style="font-size:11px;color:var(--txt2);margin-top:3px">'+(v.demandas||[]).length+' demanda(s)'+(np?' · <span style="color:var(--laranja)">'+np+' pendente(s)</span>':'')+'</div>':'');
+    : '<span class="badge badge-ok" style="margin-left:auto">Realizada</span>';
   var onclick = isAgend ? 'editarAgendamento(\''+v.id+'\')' : 'abrirVisita(\''+v.id+'\')';
   return '<div class="week-event-card card" style="border-left-color:'+cor+';padding:14px;cursor:pointer" onclick="'+onclick+'">'+
     '<div class="we-body" style="width:100%">'+
@@ -2077,7 +2061,6 @@ function renderEventoCard(v, isHoje){
     '<button onclick="event.stopPropagation();'+onclick+'" title="Editar" style="background:#e3f2fd;color:var(--azul);border:none;border-radius:8px;cursor:pointer;font-size:13px;padding:4px 7px;line-height:1;flex-shrink:0;margin-left:4px">✏️</button>'+
     '<button onclick="excluirVisitaCard(\''+v.id+'\',event)" title="Excluir registro" style="background:var(--vermelho);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;padding:4px 7px;line-height:1;flex-shrink:0;margin-left:4px">🗑️</button>'+
     '</div>'+
-    demsInfo+
     (v.obs?'<div style="font-size:12px;color:var(--txt2);font-style:italic;margin-top:4px">'+v.obs.slice(0,80)+'</div>':'')+
     btnConfirmar+
     '</div></div>';
