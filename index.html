@@ -1363,6 +1363,20 @@ function demandaItemHTML(v, d){
   if(d.prazo) w2h.push('📅 prazo '+fmtDate(d.prazo));
   if(d.hora) w2h.push('🕐 '+d.hora);
   var w2hHtml = w2h.length ? '<div style="font-size:11px;color:var(--txt2);margin-top:3px">'+w2h.join(' · ')+'</div>' : '';
+  // Checklist de observações da demanda: cada observação vira um item com checkbox próprio
+  // (em vez de um único campo de texto livre), pra marcar pendências pequenas uma a uma.
+  var itensChecklist = (d.checklist||[]).map(function(c){
+    return '<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:'+(c.feito?'#e8f5e9':'#f5f5f5')+';border-radius:6px;padding:5px 8px;margin-top:4px">'+
+      '<input type="checkbox" '+(c.feito?'checked':'')+' onchange="toggleChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',this.checked,\''+elId+'\')" style="width:15px;height:15px;flex-shrink:0">'+
+      '<span style="flex:1;'+(c.feito?'text-decoration:line-through;color:var(--txt2)':'')+'">'+c.texto+'</span>'+
+      '<button type="button" onclick="removerChecklistItem(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',\''+elId+'\')" style="border:none;background:none;color:var(--txt2);cursor:pointer;font-size:12px;padding:0 2px">✕</button>'+
+      '</label>';
+  }).join('');
+  var checklistHtml = '<div style="margin-top:6px">'+itensChecklist+
+    '<div style="display:flex;gap:6px;margin-top:4px">'+
+    '<input type="text" placeholder="+ observação sobre esta demanda..." style="flex:1;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--cinza2)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();adicionarChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+elId+'\',this);}">'+
+    '<button type="button" onclick="adicionarChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+elId+'\',this.previousElementSibling)" class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);white-space:nowrap">Adicionar</button>'+
+    '</div></div>';
   return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:'+(d.status==='resolvido'?'#f1f8e9':d.status==='andamento'?'#e3f2fd':'#fff8e1')+'">'+
     '<div style="display:flex;align-items:flex-start;gap:6px">'+
     '<span style="font-size:15px">'+icon+'</span>'+
@@ -1372,7 +1386,7 @@ function demandaItemHTML(v, d){
     w2hHtml+
     (timeline?'<div style="margin-top:6px">'+timeline+'</div>':'')+
     btns+
-    '<textarea placeholder="Observação sobre esta demanda..." style="width:100%;font-size:12px;padding:6px 8px;margin-top:6px;border-radius:6px;border:1px solid var(--cinza2);resize:vertical;min-height:32px;font-family:inherit" onblur="atualizarObsDemanda(\''+v.id+'\',\''+d.id+'\',this.value)">'+(d.obs||'')+'</textarea>'+
+    checklistHtml+
     '</div></div></div>';
 }
 
@@ -1436,7 +1450,10 @@ function atualizarStatusDemanda(visitaId, demandaId, novoStatus, elId){
 // substituindo o campo único "Observações Gerais" que existia antes no formulário de
 // agendar/registrar (removido em 2026-07-28). Salva ao sair do campo (blur), sem precisar
 // de confirmação nem virar um evento no histórico (não é mudança de status).
-function atualizarObsDemanda(visitaId, demandaId, novoValor){
+// Acha a visita (própria ou de outro usuário, via cache) e a demanda dentro dela, deixa o
+// chamador alterar (mutator) e salva no lugar certo — usado por toda ação que edita uma
+// demanda no Plano de Ação (checklist de observações, status, etc).
+function mutarDemanda(visitaId, demandaId, mutator){
   var arr = []; try{ arr = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
   var v = arr.find(function(x){ return x.id===visitaId; });
   var proprio = !!v;
@@ -1444,11 +1461,11 @@ function atualizarObsDemanda(visitaId, demandaId, novoValor){
   if(!v){
     try{ cache = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){}
     v = cache.find(function(x){ return x.id===visitaId; });
-    if(!v) return;
+    if(!v) return null;
   }
   var d = (v.demandas||[]).find(function(x){ return x.id===demandaId; });
-  if(!d || d.obs===novoValor) return;
-  d.obs = novoValor;
+  if(!d) return null;
+  mutator(d);
   if(proprio){
     localStorage.setItem('crm_v', JSON.stringify(arr));
     sincronizarRegional();
@@ -1456,6 +1473,41 @@ function atualizarObsDemanda(visitaId, demandaId, novoValor){
     localStorage.setItem('crm_dir_cache', JSON.stringify(cache));
     syncVisitaUnica(v);
   }
+  return {v:v, d:d};
+}
+
+// Checklist de observações por demanda (2026-07-28) — em vez de um único campo de texto
+// livre, cada demanda pode ter várias observações separadas, cada uma com seu checkbox
+// (ex: várias pendências pequenas relacionadas àquela demanda, marcadas uma a uma).
+function adicionarChecklistDemanda(visitaId, demandaId, elId, inputEl){
+  var texto = inputEl.value.trim();
+  if(!texto) return;
+  var res = mutarDemanda(visitaId, demandaId, function(d){
+    if(!d.checklist) d.checklist = [];
+    d.checklist.push({id:uid(), texto:texto, feito:false});
+  });
+  if(!res) return;
+  var el = document.getElementById(elId);
+  if(el) el.outerHTML = demandaItemHTML(res.v, res.d);
+}
+
+function toggleChecklistDemanda(visitaId, demandaId, itemId, feito, elId){
+  var res = mutarDemanda(visitaId, demandaId, function(d){
+    var item = (d.checklist||[]).find(function(c){ return c.id===itemId; });
+    if(item) item.feito = feito;
+  });
+  if(!res) return;
+  var el = document.getElementById(elId);
+  if(el) el.outerHTML = demandaItemHTML(res.v, res.d);
+}
+
+function removerChecklistItem(visitaId, demandaId, itemId, elId){
+  var res = mutarDemanda(visitaId, demandaId, function(d){
+    d.checklist = (d.checklist||[]).filter(function(c){ return c.id!==itemId; });
+  });
+  if(!res) return;
+  var el = document.getElementById(elId);
+  if(el) el.outerHTML = demandaItemHTML(res.v, res.d);
 }
 
 function atualizarPostos(){
