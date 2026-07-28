@@ -2212,7 +2212,10 @@ function renderPostos(){
     if(semVisita30) motivos.push(ultimaVisitaReal ? '30+ dias sem visita' : 'Nunca visitado');
     if(semPlano) motivos.push('Sem plano de ação');
     var cor = CORES[p.regional];
-    return '<div class="posto-card'+(alerta?' posto-card-alert':'')+'" onclick="abrirPosto('+p.fil+',\''+p.regional+'\')">'+
+    // Sem alerta (visitado há pouco, já tem plano de ação) mas ainda com demanda(s) pendente(s):
+    // card fica amarelo em vez do branco padrão, pra destacar que ainda tem pendência em aberto.
+    var temPendente = !alerta && np>0;
+    return '<div class="posto-card'+(alerta?' posto-card-alert':'')+'" style="'+(temPendente?'background:#fff9c4':'')+'" onclick="abrirPosto('+p.fil+',\''+p.regional+'\')">'+
       '<div class="posto-card-top">'+
       '<div class="posto-num" style="background:'+(alerta?'#fff':cor+'22')+';color:'+(alerta?'var(--vermelho)':cor)+'">'+p.fil+'</div>'+
       (np>0?'<span class="badge badge-pendente">'+np+'</span>':'')+
