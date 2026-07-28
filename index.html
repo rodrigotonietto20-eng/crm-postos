@@ -1305,7 +1305,10 @@ function editarAgendamento(id){
   document.querySelector('[data-tipo="'+v.tipo+'"]').classList.add('sel');
   STATE.tipoReg = v.tipo;
   var isA = v.tipo==='agendamento';
-  document.getElementById('card-demandas').classList.remove('hidden');
+  // Agendamento não mostra a seção de demandas (ver comentário em selTipo) — se o agendamento
+  // já tinha demandas registradas antes dessa mudança, elas continuam salvas no registro (a
+  // lista abaixo só fica populada e escondida, não é apagada), só não dá mais pra editar por aqui.
+  document.getElementById('card-demandas').classList.toggle('hidden', isA);
   document.getElementById('grp-hora').classList.remove('hidden');
   document.getElementById('lbl-data').textContent = isA ? 'Data Prevista da Visita *' : 'Data da Visita';
   atualizarLabelDemandas();
@@ -1320,16 +1323,12 @@ function editarAgendamento(id){
   atualizarPostos();
   document.getElementById('reg-posto').value = v.postoNome==='REUNIÃO MATRIZ' ? '_matriz|0' : (v.regional||v.usuario)+'|'+v.postoFil;
   // Demandas existentes
-  document.getElementById('card-demandas').classList.remove('hidden');
   var lista = document.getElementById('lista-demandas');
   lista.innerHTML = '';
   (v.demandas||[]).forEach(function(d){ addDemanda(d.desc, d.cat, d.status, d.responsavel, d.prazo, d.como, d.hora); });
   navTo('nova-visita');
 }
 
-// Atalho pro link "➕ Toque para adicionar demandas" no card da Agenda: abre o agendamento já
-// editando, mas escondendo Tipo/Dados/Observações-Foto — a visita já está definida (é este
-// agendamento específico), só falta listar o que precisa ser feito.
 // Um item de demanda dentro do "Plano de Ação do Posto". A demanda em si (d.desc) é só
 // título/categoria — quem carrega status (Pendente/Andamento/Resolvida) com botão e histórico
 // é cada item do checklist dentro dela (ver itensChecklist), não mais a demanda inteira
@@ -1600,7 +1599,9 @@ function selTipo(el){
   el.classList.add('sel');
   STATE.tipoReg = el.dataset.tipo;
   var isA = STATE.tipoReg==='agendamento';
-  document.getElementById('card-demandas').classList.remove('hidden');
+  // Agendamento não registra demanda — isso só é feito na visita realizada (2026-07-28,
+  // pedido do usuário: "quando faz o agendamento pode excluir a opção de adicionar demandas").
+  document.getElementById('card-demandas').classList.toggle('hidden', isA);
   document.getElementById('grp-hora').classList.remove('hidden');
   document.getElementById('lbl-data').textContent = isA ? 'Data Prevista' : 'Data da Visita';
   // Agendamento: limpa data e horário para o usuário escolher explicitamente (manhã ou tarde)
