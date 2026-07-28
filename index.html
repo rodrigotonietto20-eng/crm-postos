@@ -511,13 +511,6 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
     </label>
   </div>
 
-  <div class="card" id="card-obs-foto">
-    <div class="form-group">
-      <label>Observações Gerais</label>
-      <textarea id="reg-obs" placeholder="Anotações sobre a visita..."></textarea>
-    </div>
-  </div>
-
   <button class="btn btn-primary btn-full" onclick="salvarVisita()" style="margin-bottom:12px">💾 Salvar Registro</button>
   <button id="btn-excluir-registro" class="btn btn-danger btn-full hidden" onclick="excluirRegistroAtual()" style="margin-bottom:16px">🗑️ Excluir Registro</button>
 </div>
@@ -1246,11 +1239,10 @@ function atualizarLabelDemandas(){
   if(lbl) lbl.textContent = STATE.tipoReg==='agendamento' ? '📋 Demandas a serem tratadas' : '📋 Demandas Tratadas';
 }
 
-// Reexibe Tipo/Dados/Observações-Foto, escondidos pelo atalho abrirDemandasAgendamento()
+// Reexibe Tipo/Dados, escondidos pelo atalho abrirDemandasAgendamento()
 function mostrarFormularioCompleto(){
   document.getElementById('card-tipo-registro').classList.remove('hidden');
   document.getElementById('card-dados').classList.remove('hidden');
-  document.getElementById('card-obs-foto').classList.remove('hidden');
 }
 
 function setupNovaVisita(){
@@ -1259,7 +1251,6 @@ function setupNovaVisita(){
   document.getElementById('btn-excluir-registro').classList.add('hidden');
   document.getElementById('reg-data').value = today();
   document.getElementById('reg-hora').value = new Date().toTimeString().slice(0,5);
-  document.getElementById('reg-obs').value = '';
   document.getElementById('lista-demandas').innerHTML = '';
   document.getElementById('chk-sem-demanda').checked = false;
   toggleSemDemanda(document.getElementById('chk-sem-demanda'));
@@ -1317,7 +1308,6 @@ function editarAgendamento(id){
   // Dados
   document.getElementById('reg-data').value = v.data;
   document.getElementById('reg-hora').value = v.hora||'';
-  document.getElementById('reg-obs').value = v.obs||'';
   // Posto
   var user = STATE.usuario;
   var h = USERS[user];
@@ -1341,7 +1331,6 @@ function abrirDemandasAgendamento(id, ev){
   editarAgendamento(id);
   document.getElementById('card-tipo-registro').classList.add('hidden');
   document.getElementById('card-dados').classList.add('hidden');
-  document.getElementById('card-obs-foto').classList.add('hidden');
   if(!document.querySelectorAll('#lista-demandas .dem-row').length) addDemanda();
   setTimeout(function(){
     var inputs = document.querySelectorAll('#lista-demandas .dem-row .dem-input');
@@ -1383,6 +1372,7 @@ function demandaItemHTML(v, d){
     w2hHtml+
     (timeline?'<div style="margin-top:6px">'+timeline+'</div>':'')+
     btns+
+    '<textarea placeholder="Observação sobre esta demanda..." style="width:100%;font-size:12px;padding:6px 8px;margin-top:6px;border-radius:6px;border:1px solid var(--cinza2);resize:vertical;min-height:32px;font-family:inherit" onblur="atualizarObsDemanda(\''+v.id+'\',\''+d.id+'\',this.value)">'+(d.obs||'')+'</textarea>'+
     '</div></div></div>';
 }
 
@@ -1440,6 +1430,32 @@ function atualizarStatusDemanda(visitaId, demandaId, novoStatus, elId){
   var el = document.getElementById(elId);
   if(el) el.outerHTML = demandaItemHTML(v, d);
   toast(novoStatus==='resolvido'?'✅ Marcada como resolvida':novoStatus==='andamento'?'🔄 Em andamento':'⚠️ Mantida como pendente');
+}
+
+// Observação livre por demanda no Plano de Ação — cada demanda tem seu próprio campo,
+// substituindo o campo único "Observações Gerais" que existia antes no formulário de
+// agendar/registrar (removido em 2026-07-28). Salva ao sair do campo (blur), sem precisar
+// de confirmação nem virar um evento no histórico (não é mudança de status).
+function atualizarObsDemanda(visitaId, demandaId, novoValor){
+  var arr = []; try{ arr = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){}
+  var v = arr.find(function(x){ return x.id===visitaId; });
+  var proprio = !!v;
+  var cache = [];
+  if(!v){
+    try{ cache = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){}
+    v = cache.find(function(x){ return x.id===visitaId; });
+    if(!v) return;
+  }
+  var d = (v.demandas||[]).find(function(x){ return x.id===demandaId; });
+  if(!d || d.obs===novoValor) return;
+  d.obs = novoValor;
+  if(proprio){
+    localStorage.setItem('crm_v', JSON.stringify(arr));
+    sincronizarRegional();
+  } else {
+    localStorage.setItem('crm_dir_cache', JSON.stringify(cache));
+    syncVisitaUnica(v);
+  }
 }
 
 function atualizarPostos(){
@@ -1607,7 +1623,6 @@ function salvarVisita(){
     id: uid(), usuario: quemRegistra, regional: reg, postoNome: posto?posto.nome:postoNomeLivre, postoFil: fil||0,
     data: data, hora: document.getElementById('reg-hora').value,
     tipo: STATE.tipoReg, demandas: dems,
-    obs: document.getElementById('reg-obs').value.trim(),
     criadoEm: Date.now()
   };
 
@@ -1620,6 +1635,9 @@ function salvarVisita(){
       // Campo de foto foi removido do formulário, mas registros antigos que já tinham uma
       // foto capturada continuam guardando ela — só preserva, nunca mais grava foto nova.
       v.foto = arr[idx].foto || null;
+      // Observações Gerais saiu do formulário (2026-07-28, virou observação por demanda no
+      // Plano de Ação) — preserva o texto antigo em vez de apagar ao editar um registro que já tinha.
+      v.obs = arr[idx].obs || '';
       arr[idx] = v;
     } else { arr.push(v); }
     STATE.editandoId = null;
@@ -1953,48 +1971,36 @@ function renderEventoCard(v, isHoje){
     '</div></div>';
 }
 
+// Confirmar visita não passa mais pelo formulário (2026-07-28) — as demandas já foram
+// registradas na Agenda no momento de agendar/editar o agendamento, então confirmar só
+// precisa criar o registro de "visita realizada" copiando essas demandas e ir direto pro
+// Plano de Ação, onde cada demanda tem seu próprio campo de observação. O agendamento
+// original não é apagado nem alterado (mesmo comportamento de sempre — fica como histórico).
 function confirmarVisita(id, ev){
-  ev.stopPropagation();
-  var dados = loadData();
-  var v = dados.find(function(x){ return x.id===id; });
+  if(ev) ev.stopPropagation();
+  var arr = loadData();
+  var v = arr.find(function(x){ return x.id===id; });
   if(!v) return;
 
-  // Busca demandas pendentes da visita realizada mais recente deste posto
-  var visitasAnteriores = dados.filter(function(x){
-    return x.postoFil===v.postoFil && x.tipo==='visita' && x.regional===v.regional;
-  }).sort(function(a,b){ return b.criadoEm-a.criadoEm; });
-  var pendentesAnteriores = [];
-  if(visitasAnteriores.length){
-    pendentesAnteriores = (visitasAnteriores[0].demandas||[]).filter(function(d){ return d.status==='pendente'; });
+  var nova = {
+    id: uid(), usuario: v.usuario||v.regional, regional: v.regional,
+    postoNome: v.postoNome, postoFil: v.postoFil,
+    data: today(), hora: new Date().toTimeString().slice(0,5),
+    tipo: 'visita', demandas: JSON.parse(JSON.stringify(v.demandas||[])),
+    criadoEm: Date.now()
+  };
+  arr.push(nova);
+  saveData(arr);
+  sincronizarRegional();
+  capturarLocalizacao(nova.id); // best-effort, em segundo plano
+
+  toast('✅ Visita confirmada!');
+  if(nova.postoFil>0){
+    abrirPosto(nova.postoFil, nova.regional);
+  } else {
+    navTo('postos');
+    document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.screen==='postos'); });
   }
-
-  STATE.agendamentoOrigemId = id;
-  STATE.editandoId = null;
-  navTo('nova-visita');
-
-  setTimeout(function(){
-    mostrarFormularioCompleto();
-    document.getElementById('reg-regional').value = v.usuario||v.regional;
-    atualizarPostos();
-    document.getElementById('reg-posto').value = (v.regional||v.usuario)+'|'+v.postoFil;
-    document.getElementById('reg-data').value = today();
-    document.getElementById('reg-hora').value = new Date().toTimeString().slice(0,5);
-    document.getElementById('reg-obs').value = '';
-    document.querySelectorAll('[data-tipo]').forEach(function(c){ c.classList.remove('sel'); });
-    document.querySelector('[data-tipo="visita"]').classList.add('sel');
-    STATE.tipoReg = 'visita';
-    document.getElementById('card-demandas').classList.remove('hidden');
-    document.getElementById('grp-hora').classList.remove('hidden');
-    document.getElementById('lbl-data').textContent = 'Data da Visita';
-    atualizarLabelDemandas();
-    document.getElementById('lista-demandas').innerHTML = '';
-    document.getElementById('chk-sem-demanda').checked = false;
-    toggleSemDemanda(document.getElementById('chk-sem-demanda'));
-    addDemanda();
-    var totalPend = pendentesAnteriores.length;
-    if(totalPend) toast('⚠️ '+totalPend+' pendência(s) no histórico — verifique abaixo');
-    else toast('Registre as demandas e salve a visita');
-  }, 100);
 }
 
 function changeWeek(dir){
