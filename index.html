@@ -1662,6 +1662,19 @@ function salvarVisita(){
   }
 }
 
+// Bug encontrado 2026-07-28: excluir um registro só limpava o crm_v (armazenamento local),
+// nunca o crm_dir_cache (cache da nuvem). Como loadData()/getByDay() sempre mesclam os dois
+// (cache primeiro, local por cima), o próprio loadData() chamado logo em seguida dentro de
+// sincronizarRegional() — e qualquer render depois disso — trazia o registro "excluído" de
+// volta, puxado do cache. Por isso o item reaparecia na hora, como se a exclusão não tivesse
+// feito nada. Corrigido limpando os dois lados sempre.
+function removerDaCacheDir(id){
+  try{
+    var cache = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]');
+    localStorage.setItem('crm_dir_cache', JSON.stringify(cache.filter(function(v){ return v.id!==id; })));
+  }catch(e){}
+}
+
 // Exclui o registro que está sendo editado (só disponível reabrindo um agendamento/visita já
 // existente, nunca num registro novo). Remove do armazenamento local do usuário logado e tenta
 // sincronizar em seguida — como o backend do Sheets faz upsert por id (nunca recebe uma ação de
@@ -1672,6 +1685,7 @@ function excluirRegistroAtual(){
   if(!confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
   var id = STATE.editandoId;
   saveData(loadData().filter(function(v){ return v.id!==id; }));
+  removerDaCacheDir(id);
   sincronizarRegional();
   toast('🗑️ Registro excluído');
   STATE.editandoId = null;
@@ -1684,6 +1698,7 @@ function excluirVisitaCard(id, ev){
   if(ev){ ev.stopPropagation(); ev.preventDefault(); }
   if(!confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
   saveData(loadData().filter(function(v){ return v.id!==id; }));
+  removerDaCacheDir(id);
   sincronizarRegional();
   toast('🗑️ Registro excluído');
   refreshVisibleScreen();
