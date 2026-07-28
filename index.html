@@ -1377,7 +1377,10 @@ function demandaItemHTML(v, d){
   // Cada item do checklist tem seu próprio status (Pendente/Andamento/Resolvida), com botão
   // e histórico — mesmo mecanismo que antes ficava só na demanda inteira.
   var itensChecklist = checklist.map(function(c){
-    var cIcon = c.status==='resolvido'?'✅':c.status==='andamento'?'🔄':'⚠️';
+    // O checkbox é o atalho rápido pra resolver/reabrir (marca = resolvido, desmarca =
+    // pendente); pra "andamento" (nem feito nem pendente) só dá pra usar os botões abaixo,
+    // já que checkbox só tem 2 estados.
+    var cCheckbox = '<input type="checkbox" '+(c.status==='resolvido'?'checked':'')+' onchange="atualizarStatusChecklistItem(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',this.checked?\'resolvido\':\'pendente\',\''+elId+'\')" style="width:16px;height:16px;flex-shrink:0">';
     var cBtns = c.status!=='resolvido'
       ? '<div style="display:flex;gap:4px;margin-top:4px">'+
           '<button class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);padding:3px 6px;font-size:10px" onclick="atualizarStatusChecklistItem(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',\'resolvido\',\''+elId+'\')">✅ Resolvida</button>'+
@@ -1395,7 +1398,8 @@ function demandaItemHTML(v, d){
     }).join('');
     return '<div style="background:'+(c.status==='resolvido'?'#f1f8e9':c.status==='andamento'?'#e3f2fd':'#fff8e1')+';border-radius:6px;padding:6px 8px;margin-top:4px">'+
       '<div style="display:flex;align-items:center;gap:6px">'+
-      '<span style="font-size:12px">'+cIcon+'</span>'+
+      cCheckbox+
+      (c.status==='andamento'?'<span style="font-size:12px">🔄</span>':'')+
       '<span style="flex:1;font-size:12px;'+(c.status==='resolvido'?'text-decoration:line-through;color:var(--txt2)':'')+'">'+c.texto+'</span>'+
       '<button type="button" onclick="removerChecklistItem(\''+v.id+'\',\''+d.id+'\',\''+c.id+'\',\''+elId+'\')" style="border:none;background:none;color:var(--txt2);cursor:pointer;font-size:12px;padding:0 2px">✕</button>'+
       '</div>'+
