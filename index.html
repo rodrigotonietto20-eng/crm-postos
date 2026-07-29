@@ -282,7 +282,8 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 <div id="screen-login" class="login-wrap">
   <div class="login-logo">⛽</div>
   <div class="login-title">CRM Postos</div>
-  <div class="login-sub">Selecione seu perfil</div>
+  <div class="login-sub" style="margin-bottom:6px">Selecione seu perfil</div>
+  <div id="login-sync-status" style="color:rgba(255,255,255,.55);font-size:11px;margin-bottom:20px;text-align:center"></div>
 
   <!-- ===== ORGANOGRAMA ===== -->
   <div style="width:100%;max-width:380px">
@@ -1010,6 +1011,7 @@ function fetchDadosDiretor(onDone){
     .then(function(json){
       if(json.ok && json.visitas){
         localStorage.setItem('crm_dir_cache', JSON.stringify(deduplicarVisitas(json.visitas)));
+        localStorage.setItem('crm_dir_last_fetch', Date.now());
         // Catálogo de postos: nuvem manda quando já tem dado (aba "Postos" existente e não-vazia).
         // Se a nuvem ainda está vazia (aba nova, antes do primeiro sync pós-deploy), semeia com o
         // catálogo local atual uma única vez — dali em diante a nuvem passa a ser a fonte de verdade
@@ -2845,11 +2847,29 @@ window.addEventListener('offline',function(){
 });
 
 // Config nav button + init
+// Indicador de frescor dos dados na tela de login: sem isso o usuário não tinha como saber
+// se a mini agenda que está vendo é de agora ou de horas atrás (ver bug da agenda do Luiz
+// não aparecendo — a causa era justamente dado desatualizado ficando invisível).
+function atualizarLoginSyncStatus(){
+  var el = document.getElementById('login-sync-status');
+  if(!el) return;
+  var ts = parseInt(localStorage.getItem('crm_dir_last_fetch')||'0',10);
+  if(!ts){ el.textContent = navigator.onLine ? '' : '⚠️ Sem conexão — sem dados sincronizados ainda'; return; }
+  var mins = Math.round((Date.now()-ts)/60000);
+  var rel = mins<1 ? 'agora mesmo' : (mins<60 ? 'há '+mins+' min' : 'há '+Math.round(mins/60)+'h');
+  el.textContent = navigator.onLine ? '☁️ Atualizado '+rel : '⚠️ Offline — dados de '+rel;
+}
+setInterval(atualizarLoginSyncStatus, 30000);
+
 function renderLoginAgendamentos(){
+  atualizarLoginSyncStatus();
   document.querySelectorAll('.login-sched').forEach(function(el){ el.remove(); });
-  var cache = [];
-  try{ cache = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){}
-  if(!cache.length){ try{ cache = JSON.parse(localStorage.getItem('crm_v')||'[]'); }catch(e){} }
+  // Antes só caía pro local (crm_v) quando crm_dir_cache estava totalmente vazio — assim
+  // que existia qualquer cache da nuvem, um agendamento salvo localmente e ainda não
+  // puxado de volta pro cache (ex.: Luiz acabou de agendar e a leitura da nuvem ainda não
+  // rodou de novo) ficava invisível na mini agenda. loadAllData() já faz o merge certo por
+  // id (cache + local, local vence em empate), igual usado em loadData()/sincronização.
+  var cache = loadAllData();
   if(!cache.length) return;
   var hoje = today();
   // Janela rolante hoje+6 dias à frente (não a semana-calendário) — mesma lógica da
@@ -2952,6 +2972,7 @@ document.addEventListener('DOMContentLoaded', function(){
       .then(function(json){
         if(json.ok && json.visitas){
           localStorage.setItem('crm_dir_cache', JSON.stringify(deduplicarVisitas(json.visitas)));
+          localStorage.setItem('crm_dir_last_fetch', Date.now());
           if(json.ferias) saveFerias(json.ferias);
           renderLoginAgendamentos();
         }
