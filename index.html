@@ -559,11 +559,12 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
     <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input type="text" id="postos-search" placeholder="Buscar posto..." oninput="renderPostos()">
   </div>
-  <div style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px">
-    <span style="background:#ffebee;color:var(--vermelho);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🔴 30+ dias sem visita</span>
-    <span style="background:#fff9c4;color:#8d6e00;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🟡 Sem plano de ação</span>
-    <span style="background:#fff3e0;color:var(--laranja);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🟠 Pendência em aberto</span>
-    <span style="background:var(--verde-light);color:var(--verde);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🟢 Em dia</span>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 10px;background:#fff;border-radius:10px;padding:8px 10px;box-shadow:var(--shadow)">
+    <span style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:50%;background:#ff1744;display:inline-block"></span>Sem visita 30+ dias</span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:50%;background:#ffea00;display:inline-block"></span>Sem plano de ação</span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:50%;background:#ff6d00;display:inline-block"></span>Pendência em aberto</span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:50%;background:#00e676;display:inline-block"></span>Em dia</span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--txt2)"><span style="width:10px;height:10px;border-radius:50%;background:#d500f9;display:inline-block"></span>Interação da equipe</span>
   </div>
   <div id="postos-list"></div>
 </div>
@@ -2224,6 +2225,12 @@ function renderPostos(){
   var cutoff30 = (function(){ var d=new Date(); d.setDate(d.getDate()-30); return localDateStr(d); })();
   var allData = deduplicarVisitas(loadAllData());
 
+  // Semáforo do card: cada condição vira uma bolinha própria, não some quando outra também é
+  // verdadeira — um posto pode estar "sem visita" E ter uma pendência agendada ao mesmo tempo,
+  // por exemplo, e as 2 bolinhas aparecem juntas em vez de uma escolher/esconder a outra
+  // (2026-08-02, pedido do usuário: "mais de uma bolinha", cores bem chamativas, + bolinha roxa
+  // pra quando um regional/equipe — não o gerente de área — interagiu com o posto).
+  var BOLINHA_COR = { vermelho:'#ff1744', amarelo:'#ffea00', laranja:'#ff6d00', verde:'#00e676', roxo:'#d500f9' };
   var postoCardHTML = function(p){
     var vis = allData.filter(function(v){ return v.postoFil===p.fil; });
     var ult = vis.slice().sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); })[0];
@@ -2231,38 +2238,31 @@ function renderPostos(){
     var totalDemandas = vis.reduce(function(acc,v){ return acc+(v.demandas||[]).length; },0);
     var ultimaVisitaReal = vis.filter(function(v){ return v.tipo==='visita'; })
       .reduce(function(acc,v){ return (!acc || v.data>acc) ? v.data : acc; }, null);
-    // Modelo de semáforo (2026-08-02, pedido do usuário): todo posto cai em exatamente um dos 4
-    // estados, em ordem de gravidade — "nunca visitado" deixou de ser um estado à parte, um posto
-    // nunca visitado já cai automaticamente em "sem visita" (nenhuma data bate no prazo de 30 dias).
     var semVisita = !ultimaVisitaReal || ultimaVisitaReal < cutoff30;
-    var semPlano = !semVisita && totalDemandas===0;
-    var temPendente = !semVisita && !semPlano && np>0;
-    var estado = semVisita ? 'vermelho' : semPlano ? 'amarelo' : temPendente ? 'laranja' : 'verde';
-    // corBarra (linha lateral do card) vs corTag (fundo claro + texto saturado da etiqueta
-    // embaixo) usam a mesma cor-base, só a tonalidade muda — mesmo padrão dos badges já usados
-    // no resto do app (ex.: badge-pendente é o mesmo laranja aqui).
-    var CORES_ESTADO = {
-      vermelho: {barra:'var(--vermelho)', bg:'#ffebee', texto:'var(--vermelho)'},
-      amarelo:  {barra:'#fbc02d', bg:'#fff9c4', texto:'#8d6e00'},
-      laranja:  {barra:'var(--laranja)', bg:'#fff3e0', texto:'var(--laranja)'},
-      verde:    {barra:'var(--verde)', bg:'var(--verde-light)', texto:'var(--verde)'}
-    };
-    var ce = CORES_ESTADO[estado];
-    var tag = {
-      vermelho: '🔴 30+ dias sem visita',
-      amarelo: '🟡 Sem plano de ação',
-      laranja: '🟠 '+np+' pendência'+(np!==1?'s':'')+' em aberto',
-      verde: '🟢 Em dia'
-    }[estado];
+    var semPlano = totalDemandas===0;
+    var temPendente = np>0;
+    var temEquipe = vis.some(function(v){ return !isGerenteArea(v.usuario||v.regional); });
+    // "Em dia" só acende quando nenhuma das 3 condições ruins bate — não é mais um estado
+    // exclusivo, é só mais uma bolinha possível (a única que não pode coexistir com as outras 3).
+    var tudoOk = !semVisita && !semPlano && !temPendente;
+    var bolinhas = [];
+    if(semVisita) bolinhas.push({cor:BOLINHA_COR.vermelho, title:'30+ dias sem visita (ou nunca visitado)'});
+    if(semPlano) bolinhas.push({cor:BOLINHA_COR.amarelo, title:'Sem plano de ação'});
+    if(temPendente) bolinhas.push({cor:BOLINHA_COR.laranja, title:np+' pendência'+(np!==1?'s':'')+' em aberto'});
+    if(tudoOk) bolinhas.push({cor:BOLINHA_COR.verde, title:'Em dia'});
+    if(temEquipe) bolinhas.push({cor:BOLINHA_COR.roxo, title:'Teve interação de alguém da equipe (não o gerente de área)'});
+    var dotsHtml = bolinhas.map(function(b){
+      return '<span title="'+b.title+'" style="width:12px;height:12px;border-radius:50%;background:'+b.cor+';display:inline-block;box-shadow:0 0 0 1.5px #fff,0 1px 2px rgba(0,0,0,.25)"></span>';
+    }).join('');
     var cor = CORES[p.regional];
-    return '<div class="posto-card" style="box-shadow:var(--shadow),inset 4px 0 0 '+ce.barra+'" onclick="abrirPosto('+p.fil+',\''+p.regional+'\')">'+
+    return '<div class="posto-card" onclick="abrirPosto('+p.fil+',\''+p.regional+'\')">'+
       '<div class="posto-card-top">'+
       '<div class="posto-num" style="background:'+cor+'22;color:'+cor+'">'+p.fil+'</div>'+
       (np>0?'<span class="badge badge-pendente">'+np+'</span>':'')+
       '</div>'+
       '<div class="posto-name">'+p.nome+'</div>'+
       '<div class="posto-meta">'+(ult?'Última: '+fmtDate(ult.data):'Sem visitas')+'</div>'+
-      '<div style="font-size:9px;font-weight:800;color:'+ce.texto+';background:'+ce.bg+';border-radius:5px;padding:2px 5px;margin-top:5px;display:inline-block;line-height:1.3">'+tag+'</div>'+
+      '<div style="display:flex;gap:5px;margin-top:6px">'+dotsHtml+'</div>'+
       '</div>';
   };
 
@@ -2276,13 +2276,17 @@ function renderPostos(){
     var visMatriz = allData.filter(function(v){ return v.postoFil===0; });
     var ultMatriz = visMatriz.slice().sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); })[0];
     var npMatriz = visMatriz.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return demandaStatusEfetivo(d)==='pendente'; }).length; },0);
-    var matrizCard = '<div class="posto-card" style="'+(npMatriz>0?'box-shadow:var(--shadow),inset 4px 0 0 var(--laranja)':'')+'" onclick="abrirPosto(0,\''+user+'\')">'+
+    var temEquipeMatriz = visMatriz.some(function(v){ return !isGerenteArea(v.usuario||v.regional); });
+    var dotsMatriz = (npMatriz>0?'<span title="'+npMatriz+' pendência'+(npMatriz!==1?'s':'')+' em aberto" style="width:12px;height:12px;border-radius:50%;background:'+BOLINHA_COR.laranja+';display:inline-block;box-shadow:0 0 0 1.5px #fff,0 1px 2px rgba(0,0,0,.25)"></span>':'')+
+      (temEquipeMatriz?'<span title="Teve interação de alguém da equipe (não o gerente de área)" style="width:12px;height:12px;border-radius:50%;background:'+BOLINHA_COR.roxo+';display:inline-block;box-shadow:0 0 0 1.5px #fff,0 1px 2px rgba(0,0,0,.25)"></span>':'');
+    var matrizCard = '<div class="posto-card" onclick="abrirPosto(0,\''+user+'\')">'+
       '<div class="posto-card-top">'+
       '<div class="posto-num" style="background:#455a6422;color:#455a64;font-size:16px">🏢</div>'+
       (npMatriz>0?'<span class="badge badge-pendente">'+npMatriz+'</span>':'')+
       '</div>'+
       '<div class="posto-name">REUNIÃO MATRIZ</div>'+
       '<div class="posto-meta">'+(ultMatriz?'Última: '+fmtDate(ultMatriz.data):'Sem visitas')+'</div>'+
+      (dotsMatriz?'<div style="display:flex;gap:5px;margin-top:6px">'+dotsMatriz+'</div>':'')+
       '</div>';
     matrizSection = '<div style="display:flex;align-items:center;gap:6px;margin:14px 0 6px;padding-left:2px">'+
       '<div style="width:8px;height:8px;border-radius:50%;background:#455a64;flex-shrink:0"></div>'+
