@@ -575,7 +575,7 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
     </div>
     <div id="pd-plano"></div>
   </div>
-  <div class="card">
+  <div class="card" id="card-pd-hist">
     <div class="card-title">Histórico de Visitas</div>
     <div id="pd-hist"></div>
   </div>
@@ -1335,6 +1335,23 @@ function editarAgendamento(id){
 // título/categoria — quem carrega status (Pendente/Andamento/Resolvida) com botão e histórico
 // é cada item do checklist dentro dela (ver itensChecklist), não mais a demanda inteira
 // (2026-07-28, pedido do usuário: "retire o status da demanda... coloque nos itens").
+// Status "efetivo" de uma demanda pra fins de contagem/resumo (cards de posto, estatísticas do
+// Plano de Ação, badges de pendência): quando ela tem checklist, deriva do progresso dos itens
+// (mesma regra do ícone logo abaixo em demandaItemHTML) em vez do campo d.status, que fica
+// congelado em 'pendente' desde a criação — só quem edita item a item no checklist é que
+// atualiza o progresso de verdade, o d.status legado nunca mais muda depois disso.
+function demandaStatusEfetivo(d){
+  var checklist = d.checklist||[];
+  if(checklist.length){
+    var resolvidos = checklist.filter(function(c){ return c.status==='resolvido'; }).length;
+    var andamento = checklist.filter(function(c){ return c.status==='andamento'; }).length;
+    if(resolvidos===checklist.length) return 'resolvido';
+    if(andamento>0) return 'andamento';
+    return 'pendente';
+  }
+  return d.status||'pendente';
+}
+
 function demandaItemHTML(v, d){
   var elId = 'pa-'+v.id+'-'+d.id;
   // Card fica amarelo quando quem registrou a visita não é o gerente de área (regional/equipe
@@ -2187,7 +2204,7 @@ function renderPostos(){
   var postoCardHTML = function(p){
     var vis = allData.filter(function(v){ return v.postoFil===p.fil; });
     var ult = vis.slice().sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); })[0];
-    var np = vis.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
+    var np = vis.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return demandaStatusEfetivo(d)==='pendente'; }).length; },0);
     var totalDemandas = vis.reduce(function(acc,v){ return acc+(v.demandas||[]).length; },0);
     var ultimaVisitaReal = vis.filter(function(v){ return v.tipo==='visita'; })
       .reduce(function(acc,v){ return (!acc || v.data>acc) ? v.data : acc; }, null);
@@ -2221,7 +2238,7 @@ function renderPostos(){
   if(mostraMatriz){
     var visMatriz = allData.filter(function(v){ return v.postoFil===0; });
     var ultMatriz = visMatriz.slice().sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); })[0];
-    var npMatriz = visMatriz.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
+    var npMatriz = visMatriz.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return demandaStatusEfetivo(d)==='pendente'; }).length; },0);
     var matrizCard = '<div class="posto-card" style="'+(npMatriz>0?'background:#fff9c4':'')+'" onclick="abrirPosto(0,\''+user+'\')">'+
       '<div class="posto-card-top">'+
       '<div class="posto-num" style="background:#455a6422;color:#455a64;font-size:16px">🏢</div>'+
@@ -2282,6 +2299,19 @@ function abrirPosto(fil, regional){
   });
 }
 
+// Rola até a seção correspondente ao clicar num dos cards de estatística (Visitas/Pendentes/
+// Demandas) no topo do Posto, e pisca a borda pra deixar óbvio onde caiu — necessário porque
+// Pendentes e Demandas apontam pro mesmo card (Plano de Ação), então só o scroll não bastaria
+// pra diferenciar visualmente que a ação teve efeito.
+function scrollToPdSection(id){
+  var el = document.getElementById(id);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+  el.style.transition = 'box-shadow .3s';
+  el.style.boxShadow = '0 0 0 3px var(--laranja)';
+  setTimeout(function(){ el.style.boxShadow = ''; }, 900);
+}
+
 function renderPostoDetail(fil, regional){
   // "REUNIÃO MATRIZ" usa o mesmo fil=0 de sempre, mas ganha tratamento de posto de verdade
   // (título próprio, Plano de Ação habilitado) em vez do "Posto 0" genérico/sem plano de ação
@@ -2292,16 +2322,16 @@ function renderPostoDetail(fil, regional){
   var data = loadAllData().filter(function(v){ return v.postoFil===fil; }).sort(function(a,b){ return b.criadoEm-a.criadoEm; });
   var cor = isMatriz ? '#455a64' : CORES[regional];
   var totalDems = data.reduce(function(acc,v){ return acc+(v.demandas||[]).length; },0);
-  var totalPend = data.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
+  var totalPend = data.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return demandaStatusEfetivo(d)==='pendente'; }).length; },0);
   document.getElementById('pd-header').innerHTML =
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'+
     '<div style="width:50px;height:50px;border-radius:12px;background:'+cor+'22;color:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px">'+(isMatriz?'🏢':fil)+'</div>'+
     '<div><div style="font-weight:800;font-size:16px">'+(posto?posto.nome:'Posto '+fil)+'</div>'+
     '<div style="font-size:13px;color:var(--txt2)">'+(isMatriz?'Reuniões e compromissos na matriz':fmtReg(regional)+' · Filial '+fil)+'</div></div></div>'+
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">'+
-    '<div style="background:var(--verde-light);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--verde)">'+data.length+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">VISITAS</div></div>'+
-    '<div style="background:#fff3e0;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--laranja)">'+totalPend+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">PENDENTES</div></div>'+
-    '<div style="background:var(--cinza2);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--cinza)">'+totalDems+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">DEMANDAS</div></div>'+
+    '<div onclick="scrollToPdSection(\'card-pd-hist\')" style="cursor:pointer;background:var(--verde-light);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--verde)">'+data.length+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">VISITAS</div></div>'+
+    '<div onclick="scrollToPdSection(\'card-pd-plano\')" style="cursor:pointer;background:#fff3e0;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--laranja)">'+totalPend+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">PENDENTES</div></div>'+
+    '<div onclick="scrollToPdSection(\'card-pd-plano\')" style="cursor:pointer;background:var(--cinza2);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--cinza)">'+totalDems+'</div><div style="font-size:10px;color:var(--txt2);font-weight:600">DEMANDAS</div></div>'+
     '</div>'+
     (fil>0||isMatriz ? '<button class="btn btn-primary btn-full btn-sm" onclick="iniciarVisitaPosto('+fil+',\''+regional+'\')" style="margin-top:12px">➕ Nova '+(isMatriz?'Reunião na Matriz':'Visita neste Posto')+'</button>' : '');
 
@@ -2318,7 +2348,7 @@ function renderPostoDetail(fil, regional){
   var hist = document.getElementById('pd-hist');
   if(!data.length){ hist.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma visita</p></div>'; return; }
   hist.innerHTML = data.map(function(v){
-    var np = (v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length;
+    var np = (v.demandas||[]).filter(function(d){ return demandaStatusEfetivo(d)==='pendente'; }).length;
     return '<div class="list-item" onclick="abrirVisita(\''+v.id+'\')">'+
       '<div class="list-icon" style="background:'+(v.tipo==='agendamento'?'#f3e5f5':'var(--verde-light)')+'">'+(v.tipo==='agendamento'?'📅':'✅')+'</div>'+
       '<div class="list-body">'+
@@ -2376,9 +2406,9 @@ function abrirVisita(id){
   if(!v){ toast('Não encontrado'); return; }
   var cor = corUser(v.usuario||v.regional);
   var dems = v.demandas||[];
-  var nPend = dems.filter(function(d){ return d.status==='pendente'; }).length;
-  var nRes  = dems.filter(function(d){ return d.status==='resolvido'; }).length;
-  var nAnd  = dems.filter(function(d){ return d.status==='andamento'; }).length;
+  var nPend = dems.filter(function(d){ return demandaStatusEfetivo(d)==='pendente'; }).length;
+  var nRes  = dems.filter(function(d){ return demandaStatusEfetivo(d)==='resolvido'; }).length;
+  var nAnd  = dems.filter(function(d){ return demandaStatusEfetivo(d)==='andamento'; }).length;
 
   var html = '';
 
@@ -2427,20 +2457,21 @@ function abrirVisita(id){
 
     // Agrupa: pendentes primeiro, depois andamento, depois resolvidos
     var ordem = {pendente:0, andamento:1, resolvido:2};
-    var sorted = dems.slice().sort(function(a,b){ return ordem[a.status]-ordem[b.status]; });
+    var sorted = dems.slice().sort(function(a,b){ return ordem[demandaStatusEfetivo(a)]-ordem[demandaStatusEfetivo(b)]; });
 
     html += sorted.map(function(d){
-      var icon = d.status==='resolvido'?'✅':d.status==='andamento'?'🔄':'⚠️';
+      var st = demandaStatusEfetivo(d);
+      var icon = st==='resolvido'?'✅':st==='andamento'?'🔄':'⚠️';
       var w2h = [];
       if(d.responsavel) w2h.push('👤 '+d.responsavel);
       if(d.prazo) w2h.push('📅 prazo '+fmtDate(d.prazo));
       if(d.hora) w2h.push('🕐 '+d.hora);
-      return '<div class="dem-row '+d.status+'">'+
+      return '<div class="dem-row '+st+'">'+
         '<div class="dem-body">'+
         '<div class="dem-desc">'+icon+' '+d.desc+'</div>'+
         (w2h.length?'<div class="dem-cat" style="margin-top:2px">'+w2h.join(' · ')+'</div>':'')+
         '</div>'+
-        '<span class="badge badge-'+d.status+'">'+(d.status==='resolvido'?'Resolvido':d.status==='andamento'?'Andamento':'Pendente')+'</span>'+
+        '<span class="badge badge-'+st+'">'+(st==='resolvido'?'Resolvido':st==='andamento'?'Andamento':'Pendente')+'</span>'+
         '</div>';
     }).join('');
   } else {
@@ -2486,7 +2517,7 @@ function renderConfig(){
     resumoHtml = '<div class="card"><div class="card-title">📊 Resumo da Equipe</div>'+
       todosUsers.map(function(u){
         var mine = data.filter(function(v){ return (v.usuario||v.regional)===u; });
-        var np = mine.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length; },0);
+        var np = mine.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return demandaStatusEfetivo(d)==='pendente'; }).length; },0);
         var h = USERS[u]||{};
         var lastSync=localStorage.getItem('crm_last_sync_'+u);
         var syncStr=lastSync?'📶 '+new Date(parseInt(lastSync)).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'📶 Nunca sincronizou';
@@ -2814,7 +2845,7 @@ function verificarPendenciasEquipe(){
   visiveisList.forEach(function(u2){
     if(u2===user) return;
     data.filter(function(v){ return (v.usuario||v.regional)===u2; }).forEach(function(v){
-      todasPend+=(v.demandas||[]).filter(function(d){ return d.status==='pendente'; }).length;
+      todasPend+=(v.demandas||[]).filter(function(d){ return demandaStatusEfetivo(d)==='pendente'; }).length;
     });
   });
   updatePendBadge(todasPend);
