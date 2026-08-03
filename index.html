@@ -125,7 +125,16 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .posto-meta{font-size:11px;color:var(--txt2);margin-top:3px}
 .posto-card-alert{background:#ffebee;box-shadow:var(--shadow),0 0 0 1.5px var(--vermelho) inset}
 .posto-card-alert .posto-meta{color:var(--vermelho)}
+/* Alerta mais grave (nunca visitado) fica com vermelho mais saturado e borda mais grossa que o
+   alerta comum (30+ dias sem visita) — mesma cor-base, intensidade diferente pra não pesar igual
+   um posto abandonado há meses e um posto que só está "atrasando" a visita do mês. */
+.posto-card-alert-severe{background:#ffcdd2;box-shadow:var(--shadow),0 0 0 2.5px var(--vermelho) inset}
+.posto-card-alert-severe .posto-meta{color:var(--vermelho);font-weight:700}
 .posto-alert-tag{font-size:9px;font-weight:800;color:#fff;background:var(--vermelho);border-radius:5px;padding:2px 5px;margin-top:5px;display:inline-block;line-height:1.3}
+/* Tag neutra: posto foi visitado há pouco mas nunca teve nenhuma demanda registrada — não é
+   necessariamente um problema, então não usa vermelho/laranja (linguagem já reservada pra
+   cadência de visita/pendência), só informa em cinza neutro. */
+.posto-alert-tag-neutro{font-size:9px;font-weight:700;color:var(--txt2);background:#eee;border-radius:5px;padding:2px 5px;margin-top:5px;display:inline-block;line-height:1.3}
 
 /* EMPTY */
 .empty{text-align:center;padding:36px 20px;color:var(--txt2)}
@@ -558,6 +567,12 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
     <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input type="text" id="postos-search" placeholder="Buscar posto..." oninput="renderPostos()">
   </div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px">
+    <span style="background:#ffcdd2;color:var(--vermelho);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🚨 Nunca visitado</span>
+    <span style="background:#ffebee;color:var(--vermelho);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">⚠️ 30+ dias sem visita</span>
+    <span style="background:#fff9c4;color:#8d6e00;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🟡 Pendência em aberto</span>
+    <span style="background:#eee;color:var(--txt2);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">○ Sem plano de ação</span>
+  </div>
   <div id="postos-list"></div>
 </div>
 
@@ -568,6 +583,12 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
       <span>📋 Plano de Ação do Posto</span>
       <span id="pd-plano-count" style="font-size:11px;color:var(--txt2)"></span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+      <span style="background:#f3e5f5;color:var(--roxo);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">👤 Equipe (não gerente)</span>
+      <span style="background:#fff8e1;color:#e65100;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">⚠️ Pendente</span>
+      <span style="background:#e3f2fd;color:#1565c0;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🔄 Andamento</span>
+      <span style="background:#f1f8e9;color:#2e7d32;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">✅ Resolvido</span>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <input type="text" id="pd-nova-demanda" placeholder="+ Nova demanda de hoje..." style="flex:1;border:1px solid var(--cinza2);border-radius:8px;padding:8px 10px;font-size:13px" onkeydown="if(event.key==='Enter'){adicionarDemandaRapida();}">
@@ -1425,7 +1446,7 @@ function demandaItemHTML(v, d){
     '<input type="text" placeholder="+ observação sobre esta demanda..." style="flex:1;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--cinza2)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();adicionarChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+elId+'\',this);}">'+
     '<button type="button" onclick="adicionarChecklistDemanda(\''+v.id+'\',\''+d.id+'\',\''+elId+'\',this.previousElementSibling)" class="btn btn-sm" style="background:#e8f5e9;color:var(--verde);white-space:nowrap">Adicionar</button>'+
     '</div></div>';
-  return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:'+(deEquipe?'#fff9c4':'#fafafa')+'">'+
+  return '<div id="'+elId+'" style="padding:8px;border-radius:8px;margin-bottom:6px;background:'+(deEquipe?'#f3e5f5':'#fafafa')+'">'+
     '<div style="display:flex;align-items:flex-start;gap:6px">'+
     '<span style="font-size:15px">'+icon+'</span>'+
     '<div style="flex:1;min-width:0">'+
@@ -1481,7 +1502,7 @@ function planoAcaoHTML(postoFil, excluirId){
     var deEquipe = !isGerenteArea(v.usuario);
     var header = '<div style="font-size:12px;font-weight:700;color:var(--txt2);padding:8px 0 4px;border-bottom:1px solid var(--cinza2);margin-bottom:6px">'+
       (v.tipo==='agendamento'?'📅 Agend.':'✅ Visita')+' — '+fmtDate(v.data)+(v.hora?' '+v.hora:'')+' · '+fmtReg(v.usuario||v.regional)+
-      (deEquipe?' <span style="background:#fff9c4;color:#8d6e00;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:4px">👤 EQUIPE</span>':'')+
+      (deEquipe?' <span style="background:#f3e5f5;color:var(--roxo);font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:4px">👤 EQUIPE</span>':'')+
       '</div>';
     var demsHtml = (v.demandas||[]).map(function(d){ return demandaItemHTML(v, d); }).join('');
     return '<div style="margin-bottom:12px">'+header+demsHtml+'</div>';
@@ -2218,24 +2239,28 @@ function renderPostos(){
     var totalDemandas = vis.reduce(function(acc,v){ return acc+(v.demandas||[]).length; },0);
     var ultimaVisitaReal = vis.filter(function(v){ return v.tipo==='visita'; })
       .reduce(function(acc,v){ return (!acc || v.data>acc) ? v.data : acc; }, null);
-    var semVisita30 = !ultimaVisitaReal || ultimaVisitaReal < cutoff30;
-    var semPlano = totalDemandas===0;
-    var alerta = semVisita30 || semPlano;
-    var motivos = [];
-    if(semVisita30) motivos.push(ultimaVisitaReal ? '30+ dias sem visita' : 'Nunca visitado');
-    if(semPlano) motivos.push('Sem plano de ação');
+    // 2 níveis de gravidade pra cadência de visita: nunca visitado é mais grave que só estar
+    // atrasado — antes os dois viravam o mesmo vermelho, sem diferença visual (2026-08-02).
+    var nuncaVisitado = !ultimaVisitaReal;
+    var atrasado = !nuncaVisitado && ultimaVisitaReal < cutoff30;
+    var temAlerta = nuncaVisitado || atrasado;
+    // "Sem plano de ação" sozinho (posto visitado há pouco, mas nunca teve nenhuma demanda
+    // registrada) não entra mais no alerta vermelho — não é necessariamente um problema, pode só
+    // significar que está tudo certo por lá. Vira uma tag neutra em vez de alarme (2026-08-02).
+    var semPlano = totalDemandas===0 && !temAlerta;
     var cor = CORES[p.regional];
     // Sem alerta (visitado há pouco, já tem plano de ação) mas ainda com demanda(s) pendente(s):
     // card fica amarelo em vez do branco padrão, pra destacar que ainda tem pendência em aberto.
-    var temPendente = !alerta && np>0;
-    return '<div class="posto-card'+(alerta?' posto-card-alert':'')+'" style="'+(temPendente?'background:#fff9c4':'')+'" onclick="abrirPosto('+p.fil+',\''+p.regional+'\')">'+
+    var temPendente = !temAlerta && np>0;
+    return '<div class="posto-card'+(nuncaVisitado?' posto-card-alert-severe':atrasado?' posto-card-alert':'')+'" style="'+(temPendente?'background:#fff9c4':'')+'" onclick="abrirPosto('+p.fil+',\''+p.regional+'\')">'+
       '<div class="posto-card-top">'+
-      '<div class="posto-num" style="background:'+(alerta?'#fff':cor+'22')+';color:'+(alerta?'var(--vermelho)':cor)+'">'+p.fil+'</div>'+
+      '<div class="posto-num" style="background:'+(temAlerta?'#fff':cor+'22')+';color:'+(temAlerta?'var(--vermelho)':cor)+'">'+p.fil+'</div>'+
       (np>0?'<span class="badge badge-pendente">'+np+'</span>':'')+
       '</div>'+
       '<div class="posto-name">'+p.nome+'</div>'+
       '<div class="posto-meta">'+(ult?'Última: '+fmtDate(ult.data):'Sem visitas')+'</div>'+
-      (alerta?'<div class="posto-alert-tag">🚨 '+motivos.join(' · ')+'</div>':'')+
+      (nuncaVisitado?'<div class="posto-alert-tag">🚨 Nunca visitado</div>':atrasado?'<div class="posto-alert-tag">⚠️ 30+ dias sem visita</div>':'')+
+      (semPlano?'<div class="posto-alert-tag-neutro">○ Sem plano de ação</div>':'')+
       '</div>';
   };
 
