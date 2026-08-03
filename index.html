@@ -123,22 +123,10 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 .posto-num{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0}
 .posto-name{font-weight:600;font-size:12px;line-height:1.25}
 .posto-meta{font-size:11px;color:var(--txt2);margin-top:3px}
-/* Cards de alerta usam fundo branco (igual aos demais) + uma barra colorida na lateral (via
-   box-shadow inset, que respeita o border-radius arredondado) — só isso e o símbolo/tag já
-   dizem o que é; card inteiro pintado ficava "gritando" demais na grade (2026-08-02, pedido
-   do usuário pra reduzir a cor e deixar só o símbolo/indicador). */
-.posto-card-alert{background:#fff;box-shadow:var(--shadow),inset 4px 0 0 var(--vermelho)}
-.posto-card-alert .posto-meta{color:var(--vermelho)}
-/* Alerta mais grave (nunca visitado) usa barra mais grossa que o alerta comum (30+ dias sem
-   visita) — mesma cor-base, intensidade diferente pra não pesar igual um posto abandonado há
-   meses e um posto que só está "atrasando" a visita do mês. */
-.posto-card-alert-severe{background:#fff;box-shadow:var(--shadow),inset 6px 0 0 var(--vermelho)}
-.posto-card-alert-severe .posto-meta{color:var(--vermelho);font-weight:700}
-.posto-alert-tag{font-size:9px;font-weight:800;color:#fff;background:var(--vermelho);border-radius:5px;padding:2px 5px;margin-top:5px;display:inline-block;line-height:1.3}
-/* Tag neutra: posto foi visitado há pouco mas nunca teve nenhuma demanda registrada — não é
-   necessariamente um problema, então não usa vermelho/laranja (linguagem já reservada pra
-   cadência de visita/pendência), só informa em cinza neutro. */
-.posto-alert-tag-neutro{font-size:9px;font-weight:700;color:var(--txt2);background:#eee;border-radius:5px;padding:2px 5px;margin-top:5px;display:inline-block;line-height:1.3}
+/* Estado do posto (semáforo) vira só uma barra colorida na lateral do card (via box-shadow
+   inset, que respeita o border-radius arredondado) + uma etiqueta com fundo claro embaixo —
+   cores/textos calculados em JS (postoCardHTML, CORES_ESTADO), não tem classe CSS fixa por
+   estado porque são 4 combinações de cor, mais fácil manter num objeto só (2026-08-02). */
 
 /* EMPTY */
 .empty{text-align:center;padding:36px 20px;color:var(--txt2)}
@@ -572,10 +560,10 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
     <input type="text" id="postos-search" placeholder="Buscar posto..." oninput="renderPostos()">
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px">
-    <span style="background:#ffcdd2;color:var(--vermelho);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🚨 Nunca visitado</span>
-    <span style="background:#ffebee;color:var(--vermelho);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">⚠️ 30+ dias sem visita</span>
-    <span style="background:#fff9c4;color:#8d6e00;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🟡 Pendência em aberto</span>
-    <span style="background:#eee;color:var(--txt2);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">○ Sem plano de ação</span>
+    <span style="background:#ffebee;color:var(--vermelho);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🔴 30+ dias sem visita</span>
+    <span style="background:#fff9c4;color:#8d6e00;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🟡 Sem plano de ação</span>
+    <span style="background:#fff3e0;color:var(--laranja);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🟠 Pendência em aberto</span>
+    <span style="background:var(--verde-light);color:var(--verde);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">🟢 Em dia</span>
   </div>
   <div id="postos-list"></div>
 </div>
@@ -2243,28 +2231,38 @@ function renderPostos(){
     var totalDemandas = vis.reduce(function(acc,v){ return acc+(v.demandas||[]).length; },0);
     var ultimaVisitaReal = vis.filter(function(v){ return v.tipo==='visita'; })
       .reduce(function(acc,v){ return (!acc || v.data>acc) ? v.data : acc; }, null);
-    // 2 níveis de gravidade pra cadência de visita: nunca visitado é mais grave que só estar
-    // atrasado — antes os dois viravam o mesmo vermelho, sem diferença visual (2026-08-02).
-    var nuncaVisitado = !ultimaVisitaReal;
-    var atrasado = !nuncaVisitado && ultimaVisitaReal < cutoff30;
-    var temAlerta = nuncaVisitado || atrasado;
-    // "Sem plano de ação" sozinho (posto visitado há pouco, mas nunca teve nenhuma demanda
-    // registrada) não entra mais no alerta vermelho — não é necessariamente um problema, pode só
-    // significar que está tudo certo por lá. Vira uma tag neutra em vez de alarme (2026-08-02).
-    var semPlano = totalDemandas===0 && !temAlerta;
+    // Modelo de semáforo (2026-08-02, pedido do usuário): todo posto cai em exatamente um dos 4
+    // estados, em ordem de gravidade — "nunca visitado" deixou de ser um estado à parte, um posto
+    // nunca visitado já cai automaticamente em "sem visita" (nenhuma data bate no prazo de 30 dias).
+    var semVisita = !ultimaVisitaReal || ultimaVisitaReal < cutoff30;
+    var semPlano = !semVisita && totalDemandas===0;
+    var temPendente = !semVisita && !semPlano && np>0;
+    var estado = semVisita ? 'vermelho' : semPlano ? 'amarelo' : temPendente ? 'laranja' : 'verde';
+    // corBarra (linha lateral do card) vs corTag (fundo claro + texto saturado da etiqueta
+    // embaixo) usam a mesma cor-base, só a tonalidade muda — mesmo padrão dos badges já usados
+    // no resto do app (ex.: badge-pendente é o mesmo laranja aqui).
+    var CORES_ESTADO = {
+      vermelho: {barra:'var(--vermelho)', bg:'#ffebee', texto:'var(--vermelho)'},
+      amarelo:  {barra:'#fbc02d', bg:'#fff9c4', texto:'#8d6e00'},
+      laranja:  {barra:'var(--laranja)', bg:'#fff3e0', texto:'var(--laranja)'},
+      verde:    {barra:'var(--verde)', bg:'var(--verde-light)', texto:'var(--verde)'}
+    };
+    var ce = CORES_ESTADO[estado];
+    var tag = {
+      vermelho: '🔴 30+ dias sem visita',
+      amarelo: '🟡 Sem plano de ação',
+      laranja: '🟠 '+np+' pendência'+(np!==1?'s':'')+' em aberto',
+      verde: '🟢 Em dia'
+    }[estado];
     var cor = CORES[p.regional];
-    // Sem alerta (visitado há pouco, já tem plano de ação) mas ainda com demanda(s) pendente(s):
-    // card fica amarelo em vez do branco padrão, pra destacar que ainda tem pendência em aberto.
-    var temPendente = !temAlerta && np>0;
-    return '<div class="posto-card'+(nuncaVisitado?' posto-card-alert-severe':atrasado?' posto-card-alert':'')+'" style="'+(temPendente?'box-shadow:var(--shadow),inset 4px 0 0 #fbc02d':'')+'" onclick="abrirPosto('+p.fil+',\''+p.regional+'\')">'+
+    return '<div class="posto-card" style="box-shadow:var(--shadow),inset 4px 0 0 '+ce.barra+'" onclick="abrirPosto('+p.fil+',\''+p.regional+'\')">'+
       '<div class="posto-card-top">'+
-      '<div class="posto-num" style="background:'+(temAlerta?'#fff':cor+'22')+';color:'+(temAlerta?'var(--vermelho)':cor)+'">'+p.fil+'</div>'+
+      '<div class="posto-num" style="background:'+cor+'22;color:'+cor+'">'+p.fil+'</div>'+
       (np>0?'<span class="badge badge-pendente">'+np+'</span>':'')+
       '</div>'+
       '<div class="posto-name">'+p.nome+'</div>'+
       '<div class="posto-meta">'+(ult?'Última: '+fmtDate(ult.data):'Sem visitas')+'</div>'+
-      (nuncaVisitado?'<div class="posto-alert-tag">🚨 Nunca visitado</div>':atrasado?'<div class="posto-alert-tag">⚠️ 30+ dias sem visita</div>':'')+
-      (semPlano?'<div class="posto-alert-tag-neutro">○ Sem plano de ação</div>':'')+
+      '<div style="font-size:9px;font-weight:800;color:'+ce.texto+';background:'+ce.bg+';border-radius:5px;padding:2px 5px;margin-top:5px;display:inline-block;line-height:1.3">'+tag+'</div>'+
       '</div>';
   };
 
@@ -2278,7 +2276,7 @@ function renderPostos(){
     var visMatriz = allData.filter(function(v){ return v.postoFil===0; });
     var ultMatriz = visMatriz.slice().sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); })[0];
     var npMatriz = visMatriz.reduce(function(acc,v){ return acc+(v.demandas||[]).filter(function(d){ return demandaStatusEfetivo(d)==='pendente'; }).length; },0);
-    var matrizCard = '<div class="posto-card" style="'+(npMatriz>0?'box-shadow:var(--shadow),inset 4px 0 0 #fbc02d':'')+'" onclick="abrirPosto(0,\''+user+'\')">'+
+    var matrizCard = '<div class="posto-card" style="'+(npMatriz>0?'box-shadow:var(--shadow),inset 4px 0 0 var(--laranja)':'')+'" onclick="abrirPosto(0,\''+user+'\')">'+
       '<div class="posto-card-top">'+
       '<div class="posto-num" style="background:#455a6422;color:#455a64;font-size:16px">🏢</div>'+
       (npMatriz>0?'<span class="badge badge-pendente">'+npMatriz+'</span>':'')+
