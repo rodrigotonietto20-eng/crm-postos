@@ -1091,8 +1091,16 @@ function getWeekDates(offset){
 // Todo mundo entra com PIN, inclusive o Diretor (visão de rede inteira é protegida).
 var PIN_BUFFER = '';
 var PIN_TARGET_USER = null;
+// PIN_MODE distingue o modal de PIN normal (loga como PIN_TARGET_USER) do modal de
+// desbloqueio da agenda de auditoria na tela de login (não loga ninguém, só revela a
+// prévia pra quem digitar o PIN do Diretor ou do Cassiano — ver abrirUnlockAuditoria()).
+var PIN_MODE = 'login';
+// Fica só na memória (nunca localStorage) — reseta sozinho a cada reload e no logout
+// (doLogout()), pra nunca "vazar" desbloqueado pro próximo que pegar o aparelho.
+var AGENDA_AUDITORIA_DESBLOQUEADA = false;
 
 function iniciarLogin(user){
+  PIN_MODE = 'login';
   PIN_TARGET_USER = user;
   PIN_BUFFER = '';
   var h = USERS[user];
@@ -1109,6 +1117,25 @@ function fecharPinModal(){
   document.getElementById('pin-modal').classList.add('hidden');
   PIN_BUFFER = '';
   PIN_TARGET_USER = null;
+  PIN_MODE = 'login';
+}
+
+// Clique no "🔒 Agenda oculta" (ver renderLoginAgendamentos) — reusa o mesmo modal de PIN,
+// mas em vez de logar como alguém, só revela a prévia real pra quem souber o PIN do
+// Diretor ou do Cassiano. stopPropagation() é essencial: o cadeado fica dentro do próprio
+// <button> de login (data-user), sem isso o clique borbulharia e abriria o login normal.
+function abrirUnlockAuditoria(evt){
+  if(evt){ evt.stopPropagation(); evt.preventDefault(); }
+  PIN_MODE = 'unlock-auditoria';
+  PIN_TARGET_USER = null;
+  PIN_BUFFER = '';
+  document.getElementById('pin-modal-user').textContent = 'Desbloquear agenda';
+  var av = document.getElementById('pin-modal-av');
+  av.textContent = '🔒';
+  av.style.background = '#607d8b';
+  document.getElementById('pin-error').classList.add('hidden');
+  atualizarPinDots();
+  document.getElementById('pin-modal').classList.remove('hidden');
 }
 
 function atualizarPinDots(){
@@ -1130,19 +1157,32 @@ function pinBackspace(){
 }
 
 function verificarPin(){
+  if(PIN_MODE==='unlock-auditoria'){
+    if(PIN_BUFFER===USERS.Diretor.pin || PIN_BUFFER===USERS.Cassiano.pin){
+      AGENDA_AUDITORIA_DESBLOQUEADA = true;
+      fecharPinModal();
+      renderLoginAgendamentos();
+    } else {
+      pinErro();
+    }
+    return;
+  }
   var h = USERS[PIN_TARGET_USER];
   if(h && PIN_BUFFER===h.pin){
     var user = PIN_TARGET_USER;
     fecharPinModal();
     doLogin(user);
   } else {
-    document.getElementById('pin-error').classList.remove('hidden');
-    var box = document.querySelector('.pin-modal-box');
-    box.classList.add('shake');
-    setTimeout(function(){ box.classList.remove('shake'); }, 400);
-    PIN_BUFFER = '';
-    atualizarPinDots();
+    pinErro();
   }
+}
+function pinErro(){
+  document.getElementById('pin-error').classList.remove('hidden');
+  var box = document.querySelector('.pin-modal-box');
+  box.classList.add('shake');
+  setTimeout(function(){ box.classList.remove('shake'); }, 400);
+  PIN_BUFFER = '';
+  atualizarPinDots();
 }
 
 function doLogin(user){
@@ -1201,6 +1241,10 @@ function irParaAgendaHoje(){
 }
 function doLogout(){
   STATE.usuario = null;
+  // Reseta o desbloqueio da agenda de auditoria — sem isso, quem pegasse o aparelho em
+  // seguida (depois do Diretor/Cassiano ter desbloqueado e saído) continuaria vendo a
+  // agenda dos auditores exposta, mesmo sem saber o PIN.
+  AGENDA_AUDITORIA_DESBLOQUEADA = false;
   document.getElementById('app').classList.add('hidden');
   document.getElementById('bottom-nav').classList.add('hidden');
   document.getElementById('screen-login').classList.remove('hidden');
@@ -2955,17 +2999,18 @@ function renderLoginAgendamentos(){
   });
   // Tela de login é pré-autenticação (visível a qualquer um parado no aparelho compartilhado,
   // sem saber ainda quem vai logar) — não dá pra aplicar visiveisFor() aqui, que depende de
-  // já saber quem é o usuário. Pedido: agenda de auditoria (Cassiano + equipe) só deve ser
-  // vista de verdade por Diretor/Cassiano, nunca por quem só está de passagem pelo aparelho
-  // nessa tela — então esses usuários sempre aparecem com um cadeado aqui, e a agenda real
-  // continua acessível normalmente depois de logar (a tela de Agenda já respeita a hierarquia
-  // via visiveisFor(), que já limita auditores a Diretor+Cassiano sem mudança nenhuma).
+  // já saber quem é o usuário. Pedido: agenda de auditoria (Cassiano + equipe) só pode ser
+  // vista por quem souber o PIN do Diretor ou do Cassiano — por padrão aparece com um
+  // cadeado clicável (abrirUnlockAuditoria()); depois de desbloqueado com o PIN certo, o
+  // conteúdo real aparece pra todos os 3 até o próximo reload/logout (AGENDA_AUDITORIA_
+  // DESBLOQUEADA, resetado em doLogout()). A tela de Agenda pós-login já respeita a
+  // hierarquia via visiveisFor() (limita auditores a Diretor+Cassiano), sem mudança nenhuma.
   var usuariosAgendaOculta = ['Cassiano'].concat((USERS.Cassiano&&USERS.Cassiano.equipe)||[]);
   document.querySelectorAll('[data-user]').forEach(function(btn){
     var user = btn.dataset.user;
-    if(usuariosAgendaOculta.indexOf(user)>=0){
+    if(usuariosAgendaOculta.indexOf(user)>=0 && !AGENDA_AUDITORIA_DESBLOQUEADA){
       var wrapOculto = document.createElement('div');
-      wrapOculto.innerHTML = '<div class="login-sched" style="width:100%;margin-top:6px;text-align:center;border-top:1px solid rgba(0,0,0,.07);padding-top:6px;font-size:10px;color:var(--cinza3);font-weight:600">🔒 Agenda oculta</div>';
+      wrapOculto.innerHTML = '<div class="login-sched" style="width:100%;margin-top:6px;text-align:center;border-top:1px solid rgba(0,0,0,.07);padding-top:6px;font-size:10px;color:var(--cinza3);font-weight:600;cursor:pointer" onclick="abrirUnlockAuditoria(event)">🔒 Agenda oculta</div>';
       btn.appendChild(wrapOculto.firstChild);
       return;
     }
