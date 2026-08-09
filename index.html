@@ -1091,16 +1091,15 @@ function getWeekDates(offset){
 // Todo mundo entra com PIN, inclusive o Diretor (visão de rede inteira é protegida).
 var PIN_BUFFER = '';
 var PIN_TARGET_USER = null;
-// PIN_MODE distingue o modal de PIN normal (loga como PIN_TARGET_USER) do modal de
-// desbloqueio da agenda de auditoria na tela de login (não loga ninguém, só revela a
-// prévia pra quem digitar o PIN do Diretor ou do Cassiano — ver abrirUnlockAuditoria()).
-var PIN_MODE = 'login';
 // Fica só na memória (nunca localStorage) — reseta sozinho a cada reload e no logout
 // (doLogout()), pra nunca "vazar" desbloqueado pro próximo que pegar o aparelho.
 var AGENDA_AUDITORIA_DESBLOQUEADA = false;
+// Cassiano (Gestor de Auditoria) + sua equipe de auditores — mini agenda desses 3 na tela
+// de login fica com cadeado (ver renderLoginAgendamentos), só desbloqueia com o PIN do
+// Diretor ou do próprio Cassiano (ver verificarPin abaixo).
+function usuariosAgendaOculta(){ return ['Cassiano'].concat((USERS.Cassiano&&USERS.Cassiano.equipe)||[]); }
 
 function iniciarLogin(user){
-  PIN_MODE = 'login';
   PIN_TARGET_USER = user;
   PIN_BUFFER = '';
   var h = USERS[user];
@@ -1117,25 +1116,6 @@ function fecharPinModal(){
   document.getElementById('pin-modal').classList.add('hidden');
   PIN_BUFFER = '';
   PIN_TARGET_USER = null;
-  PIN_MODE = 'login';
-}
-
-// Clique no "🔒 Agenda oculta" (ver renderLoginAgendamentos) — reusa o mesmo modal de PIN,
-// mas em vez de logar como alguém, só revela a prévia real pra quem souber o PIN do
-// Diretor ou do Cassiano. stopPropagation() é essencial: o cadeado fica dentro do próprio
-// <button> de login (data-user), sem isso o clique borbulharia e abriria o login normal.
-function abrirUnlockAuditoria(evt){
-  if(evt){ evt.stopPropagation(); evt.preventDefault(); }
-  PIN_MODE = 'unlock-auditoria';
-  PIN_TARGET_USER = null;
-  PIN_BUFFER = '';
-  document.getElementById('pin-modal-user').textContent = 'Desbloquear agenda';
-  var av = document.getElementById('pin-modal-av');
-  av.textContent = '🔒';
-  av.style.background = '#607d8b';
-  document.getElementById('pin-error').classList.add('hidden');
-  atualizarPinDots();
-  document.getElementById('pin-modal').classList.remove('hidden');
 }
 
 function atualizarPinDots(){
@@ -1157,24 +1137,25 @@ function pinBackspace(){
 }
 
 function verificarPin(){
-  if(PIN_MODE==='unlock-auditoria'){
-    if(PIN_BUFFER===USERS.Diretor.pin || PIN_BUFFER===USERS.Cassiano.pin){
-      AGENDA_AUDITORIA_DESBLOQUEADA = true;
-      fecharPinModal();
-      renderLoginAgendamentos();
-    } else {
-      pinErro();
-    }
-    return;
-  }
   var h = USERS[PIN_TARGET_USER];
   if(h && PIN_BUFFER===h.pin){
     var user = PIN_TARGET_USER;
     fecharPinModal();
     doLogin(user);
-  } else {
-    pinErro();
+    return;
   }
+  // PIN de outra pessoa digitado no card de um auditor/Cassiano: em vez de erro, se for o
+  // PIN do Diretor ou do próprio Cassiano, desbloqueia a prévia da mini agenda em vez de
+  // logar como ninguém — evita depender de acertar um alvo pequeno (o cadeadinho "🔒 Agenda
+  // oculta" sozinho já causou confusão real: tocar no card geral abria o login normal
+  // daquela pessoa, então o PIN do Diretor "não funcionava" ali).
+  if(usuariosAgendaOculta().indexOf(PIN_TARGET_USER)>=0 && (PIN_BUFFER===USERS.Diretor.pin || PIN_BUFFER===USERS.Cassiano.pin)){
+    AGENDA_AUDITORIA_DESBLOQUEADA = true;
+    fecharPinModal();
+    renderLoginAgendamentos();
+    return;
+  }
+  pinErro();
 }
 function pinErro(){
   document.getElementById('pin-error').classList.remove('hidden');
@@ -3000,17 +2981,21 @@ function renderLoginAgendamentos(){
   // Tela de login é pré-autenticação (visível a qualquer um parado no aparelho compartilhado,
   // sem saber ainda quem vai logar) — não dá pra aplicar visiveisFor() aqui, que depende de
   // já saber quem é o usuário. Pedido: agenda de auditoria (Cassiano + equipe) só pode ser
-  // vista por quem souber o PIN do Diretor ou do Cassiano — por padrão aparece com um
-  // cadeado clicável (abrirUnlockAuditoria()); depois de desbloqueado com o PIN certo, o
-  // conteúdo real aparece pra todos os 3 até o próximo reload/logout (AGENDA_AUDITORIA_
-  // DESBLOQUEADA, resetado em doLogout()). A tela de Agenda pós-login já respeita a
-  // hierarquia via visiveisFor() (limita auditores a Diretor+Cassiano), sem mudança nenhuma.
-  var usuariosAgendaOculta = ['Cassiano'].concat((USERS.Cassiano&&USERS.Cassiano.equipe)||[]);
+  // vista por quem souber o PIN do Diretor ou do Cassiano. Por padrão aparece com um
+  // cadeado — não é clicável por si só (1ª versão disso usava um texto pequeno clicável e
+  // gerou confusão real: tocar no card sem acertar o texto abria o login normal daquela
+  // pessoa, então o PIN do Diretor "não funcionava"). Agora basta tocar no card normalmente
+  // (mesmo alvo grande de sempre, iniciarLogin()) e digitar o PIN do Diretor ou do Cassiano
+  // no teclado que abrir — verificarPin() reconhece e desbloqueia em vez de dar erro, sem
+  // logar como ninguém. Desbloqueado, o conteúdo real aparece pra todos os 3 até o próximo
+  // reload/logout (AGENDA_AUDITORIA_DESBLOQUEADA, resetado em doLogout()). A tela de Agenda
+  // pós-login já respeita a hierarquia via visiveisFor() (limita auditores a
+  // Diretor+Cassiano), sem mudança nenhuma.
   document.querySelectorAll('[data-user]').forEach(function(btn){
     var user = btn.dataset.user;
-    if(usuariosAgendaOculta.indexOf(user)>=0 && !AGENDA_AUDITORIA_DESBLOQUEADA){
+    if(usuariosAgendaOculta().indexOf(user)>=0 && !AGENDA_AUDITORIA_DESBLOQUEADA){
       var wrapOculto = document.createElement('div');
-      wrapOculto.innerHTML = '<div class="login-sched" style="width:100%;margin-top:6px;text-align:center;border-top:1px solid rgba(0,0,0,.07);padding-top:6px;font-size:10px;color:var(--cinza3);font-weight:600;cursor:pointer" onclick="abrirUnlockAuditoria(event)">🔒 Agenda oculta</div>';
+      wrapOculto.innerHTML = '<div class="login-sched" style="width:100%;margin-top:6px;text-align:center;border-top:1px solid rgba(0,0,0,.07);padding-top:6px;font-size:10px;color:var(--cinza3);font-weight:600">🔒 Agenda oculta<br><span style="font-size:9px;font-weight:400">toque e informe o PIN do Diretor</span></div>';
       btn.appendChild(wrapOculto.firstChild);
       return;
     }
