@@ -2953,8 +2953,22 @@ function renderLoginAgendamentos(){
   var agendSem = cache.filter(function(v){
     return v.tipo==='agendamento' && v.data>=semInicio && v.data<=semFim;
   });
+  // Tela de login é pré-autenticação (visível a qualquer um parado no aparelho compartilhado,
+  // sem saber ainda quem vai logar) — não dá pra aplicar visiveisFor() aqui, que depende de
+  // já saber quem é o usuário. Pedido: agenda de auditoria (Cassiano + equipe) só deve ser
+  // vista de verdade por Diretor/Cassiano, nunca por quem só está de passagem pelo aparelho
+  // nessa tela — então esses usuários sempre aparecem com um cadeado aqui, e a agenda real
+  // continua acessível normalmente depois de logar (a tela de Agenda já respeita a hierarquia
+  // via visiveisFor(), que já limita auditores a Diretor+Cassiano sem mudança nenhuma).
+  var usuariosAgendaOculta = ['Cassiano'].concat((USERS.Cassiano&&USERS.Cassiano.equipe)||[]);
   document.querySelectorAll('[data-user]').forEach(function(btn){
     var user = btn.dataset.user;
+    if(usuariosAgendaOculta.indexOf(user)>=0){
+      var wrapOculto = document.createElement('div');
+      wrapOculto.innerHTML = '<div class="login-sched" style="width:100%;margin-top:6px;text-align:center;border-top:1px solid rgba(0,0,0,.07);padding-top:6px;font-size:10px;color:var(--cinza3);font-weight:600">🔒 Agenda oculta</div>';
+      btn.appendChild(wrapOculto.firstChild);
+      return;
+    }
     var meus = agendSem.filter(function(v){ return (v.usuario||v.regional)===user; });
     var feriasAtiva = (loadFerias()||[]).find(function(f){ return f.usuario===user && hoje>=f.inicio && hoje<=f.fim; });
     // Antes só mostrava o card pra quem tinha algo agendado ou estava de férias — quem
