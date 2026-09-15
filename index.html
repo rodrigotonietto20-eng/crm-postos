@@ -3086,21 +3086,36 @@ function renderLoginAgendamentos(){
   });
 }
 
+// Busca a agenda da nuvem pra atualizar a tela de login (organograma pré-autenticação).
+// Antes isso só rodava uma vez no DOMContentLoaded: um aparelho deixado parado nessa tela
+// (uso comum em celular/tablet compartilhado) ficava com "sem visita" pra sempre, mesmo
+// depois de outra pessoa agendar em outro aparelho, até alguém dar F5 na página.
+function fetchLoginAgendamentos(){
+  if(STATE.usuario || !navigator.onLine) return; // já logado, ou sem conexão: nada a fazer
+  fetch(SCRIPT_URL+'?t='+Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(json){
+      if(json.ok && json.visitas){
+        localStorage.setItem('crm_dir_cache', JSON.stringify(deduplicarVisitas(json.visitas)));
+        localStorage.setItem('crm_dir_last_fetch', Date.now());
+        if(json.ferias) saveFerias(json.ferias);
+        renderLoginAgendamentos();
+      }
+    }).catch(function(){});
+}
+
 document.addEventListener('DOMContentLoaded', function(){
   if(!navigator.onLine) document.getElementById('offline-bar').classList.add('show');
   renderLoginAgendamentos();
-  if(navigator.onLine){
-    fetch(SCRIPT_URL+'?t='+Date.now())
-      .then(function(r){ return r.json(); })
-      .then(function(json){
-        if(json.ok && json.visitas){
-          localStorage.setItem('crm_dir_cache', JSON.stringify(deduplicarVisitas(json.visitas)));
-          localStorage.setItem('crm_dir_last_fetch', Date.now());
-          if(json.ferias) saveFerias(json.ferias);
-          renderLoginAgendamentos();
-        }
-      }).catch(function(){});
-  }
+  fetchLoginAgendamentos();
+  // Mesmo timer de 2min usado pós-login, só que também roda antes de logar. fetchLoginAgendamentos()
+  // se autoprotege (não faz nada se já tem alguém logado), então é seguro deixar rodando sempre.
+  setInterval(fetchLoginAgendamentos, 2*60*1000);
+  // Celular: ao voltar de segundo plano/tela bloqueada com o app ainda na tela de login,
+  // busca na hora em vez de esperar o timer — é o caso mais comum de "aparelho parado".
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState==='visible') fetchLoginAgendamentos();
+  });
   var nav = document.querySelector('.bottom-nav');
   var btn = document.createElement('button');
   btn.className='nav-btn'; btn.dataset.screen='config';
