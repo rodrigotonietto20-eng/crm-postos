@@ -1257,7 +1257,14 @@ function navTo(name, btn){
     document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
   }
-  if(name==='agenda'){ STATE.agendaDay = today(); renderWeekAgenda(); }
+  if(name==='agenda'){
+    STATE.agendaDay = today(); renderWeekAgenda();
+    // Busca em segundo plano ao entrar na Agenda, mesmo padrão usado em Postos —
+    // sem isso, quem abrisse a Agenda em outro aparelho só via agendamentos novos
+    // depois do timer de 2min (que no celular é pausado em segundo plano) ou de um
+    // clique manual em "Atualizar".
+    fetchDadosDiretor(function(){ if(STATE.screen==='agenda') renderWeekAgenda(); });
+  }
   if(name==='postos'){
     renderPostos();
     // Busca em segundo plano ao entrar na lista, pra badges/alertas de outros usuários
