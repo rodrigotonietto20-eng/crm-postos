@@ -980,6 +980,13 @@ function sincronizarManual(){
 function normalizarVisita(v){
   // Corrige data: "2026-06-28T03:00:00.000Z" → "2026-06-28"
   if(v.data && typeof v.data==='string' && v.data.length>10) v.data = v.data.substring(0,10);
+  // A planilha não guarda criadoEm (todos os 1149 registros vinham vazios em 2026-09-27), e
+  // tudo que ordena "mais recente primeiro" (Plano de Ação, "Última:" do card do posto) ficava
+  // em ordem aleatória. O id é Date.now() em base36 + 3 letras aleatórias — recupera dele.
+  if(!Number(v.criadoEm) && typeof v.id==='string' && v.id.length>3){
+    var ms = parseInt(v.id.slice(0,-3), 36);
+    v.criadoEm = (ms>1600000000000 && ms<2200000000000) ? ms : 0;
+  }
   // Corrige tipo corrompido (valor parece timestamp): tenta recuperar do campo obs
   if(v.tipo && typeof v.tipo==='string' && v.tipo.indexOf('T')>0 && v.tipo.indexOf(':')>0){
     var tipoRecuperado = '';
