@@ -403,6 +403,33 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
       </div>
 
     </div>
+
+    <!-- Equipe Luiz: Gerentes Trainers (acesso a todos os postos) -->
+    <div style="margin-top:12px;border-left:2px solid rgba(255,255,255,.3);padding-left:5px">
+      <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin:0 0 4px 2px">🎓 Gerentes Trainers · equipe Luiz Lira</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;align-items:start">
+        <button class="login-btn" data-user="Adebar" onclick="iniciarLogin('Adebar')" style="padding:8px 4px">
+          <div class="login-av" style="background:#33691e;width:30px;height:30px;font-size:12px">A</div>
+          <span style="font-size:11px">Adebar</span><small>G. Trainer</small>
+        </button>
+        <button class="login-btn" data-user="Neuri" onclick="iniciarLogin('Neuri')" style="padding:8px 4px">
+          <div class="login-av" style="background:#00796b;width:30px;height:30px;font-size:12px">N</div>
+          <span style="font-size:11px">Neuri</span><small>G. Trainer</small>
+        </button>
+        <button class="login-btn" data-user="Patrik" onclick="iniciarLogin('Patrik')" style="padding:8px 4px">
+          <div class="login-av" style="background:#283593;width:30px;height:30px;font-size:12px">P</div>
+          <span style="font-size:11px">Patrik</span><small>G. Trainer</small>
+        </button>
+        <button class="login-btn" data-user="Roberto" onclick="iniciarLogin('Roberto')" style="padding:8px 4px">
+          <div class="login-av" style="background:#8d6e63;width:30px;height:30px;font-size:12px">R</div>
+          <span style="font-size:11px">Roberto</span><small>G. Trainer</small>
+        </button>
+        <button class="login-btn" data-user="Marcos" onclick="iniciarLogin('Marcos')" style="padding:8px 4px">
+          <div class="login-av" style="background:#5d4037;width:30px;height:30px;font-size:12px">M</div>
+          <span style="font-size:11px">Marcos</span><small>G. Trainer</small>
+        </button>
+      </div>
+    </div>
   </div><!-- /organograma -->
 </div>
 
@@ -685,7 +712,7 @@ var POSTOS = {
 // Hierarquia completa da organização
 var USERS = {
   Diretor:   { label:'Diretor',               role:'Direção',                   cor:'#37474f', inicial:'D', equipe:null, pin:'0001' },
-  Luiz:      { label:'Luiz Lira',             role:'Gerente de Operações',      cor:'#1b5e20', inicial:'L', equipe:['Fabricio','Adelcio','Joao','Edinei','Giovani'], pin:'1001' },
+  Luiz:      { label:'Luiz Lira',             role:'Gerente de Operações',      cor:'#1b5e20', inicial:'L', equipe:['Fabricio','Adelcio','Joao','Edinei','Giovani','Adebar','Neuri','Patrik','Roberto','Marcos'], pin:'1001' },
   Rodrigo:   { label:'Rodrigo Pasquali',      role:'Gerente Comercial',         cor:'#0277bd', inicial:'R', equipe:['Josias','Mateus'], todosPostos:true, pin:'2002' },
   Alisson:   { label:'Alisson Fernandes',     role:'Gerente de Conveniência',   cor:'#6a1b9a', inicial:'A', equipe:['Lisiane','Endiel','Patricia'], todosPostos:true, pin:'3003' },
   Cassiano:  { label:'Cassiano',              role:'Gestor de Auditoria',       cor:'#ef6c00', inicial:'C', equipe:['JoaoAuditor','Ronai'], todosPostos:true, pin:'4040' },
@@ -701,9 +728,15 @@ var USERS = {
   Patricia:  { label:'Patricia',              role:'Especialista de Lojas',     cor:'#00acc1', inicial:'P', equipe:null, todosPostos:true, pin:'4050' },
   JoaoAuditor: { label:'João',                role:'Auditor',                   cor:'#1565c0', inicial:'J', equipe:null, todosPostos:true, pin:'5050' },
   Ronai:     { label:'Ronai',                 role:'Auditor',                   cor:'#ef6c00', inicial:'R', equipe:null, todosPostos:true, pin:'6060' },
+  // Gerentes Trainers (2026-11-13): equipe do Luiz Lira, sem posto fixo — atuam na rede inteira.
+  Adebar:    { label:'Adebar',                role:'Gerente Trainer',           cor:'#33691e', inicial:'A', equipe:null, todosPostos:true, pin:'1212' },
+  Neuri:     { label:'Neuri',                 role:'Gerente Trainer',           cor:'#00796b', inicial:'N', equipe:null, todosPostos:true, pin:'2323' },
+  Patrik:    { label:'Patrik',                role:'Gerente Trainer',           cor:'#283593', inicial:'P', equipe:null, todosPostos:true, pin:'3434' },
+  Roberto:   { label:'Roberto',               role:'Gerente Trainer',           cor:'#8d6e63', inicial:'R', equipe:null, todosPostos:true, pin:'4545' },
+  Marcos:    { label:'Marcos',                role:'Gerente Trainer',           cor:'#5d4037', inicial:'M', equipe:null, todosPostos:true, pin:'5656' },
 };
 
-var METAS_DEFAULT = {Fabricio:25,Adelcio:25,Joao:25,Edinei:25,Giovani:25,Josias:25,Mateus:25,Lisiane:25,Endiel:25,Patricia:25,Luiz:25,Rodrigo:25,Alisson:25,Cassiano:25,JoaoAuditor:25,Ronai:25};
+var METAS_DEFAULT = {Fabricio:25,Adelcio:25,Joao:25,Edinei:25,Giovani:25,Josias:25,Mateus:25,Lisiane:25,Endiel:25,Patricia:25,Luiz:25,Rodrigo:25,Alisson:25,Cassiano:25,JoaoAuditor:25,Ronai:25,Adebar:25,Neuri:25,Patrik:25,Roberto:25,Marcos:25};
 function loadMetas(){ try{ return JSON.parse(localStorage.getItem('crm_metas')||'null')||METAS_DEFAULT; }catch(e){ return METAS_DEFAULT; } }
 function saveMetas(m){ localStorage.setItem('crm_metas',JSON.stringify(m)); }
 
