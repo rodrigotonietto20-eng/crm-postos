@@ -546,9 +546,14 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
 
 <!-- AGENDA SEMANAL -->
 <div id="screen-agenda" class="section hidden">
-  <div class="card" id="card-minha-sync" style="padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;background:#e8f5e9">
-    <span style="flex:1;font-size:12px;color:var(--verde2)" id="minha-sync-status">☁️ Sincronização</span>
-    <button onclick="sincronizarManual()" style="background:var(--verde);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 Sincronizar agora</button>
+  <!-- Sincronização unificada (2026-11-13): antes eram 2 barras + botão do topo, cada uma com um
+       horário diferente. Agora uma linha só: envio (meus dados → nuvem) e recebimento (nuvem → aparelho). -->
+  <div class="card" id="card-minha-sync" style="padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;background:#e8f5e9">
+    <div style="flex:1;min-width:0;font-size:11px;color:var(--verde2);line-height:1.45">
+      <div id="agenda-sync-status" style="font-weight:700">☁️ Agenda</div>
+      <div id="minha-sync-status" style="opacity:.8"></div>
+    </div>
+    <button onclick="sincronizarAgenda()" style="background:var(--verde);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">↻ Sincronizar</button>
   </div>
   <div class="card" style="padding:14px">
     <div class="week-nav">
@@ -562,6 +567,17 @@ body{font-family:'Segoe UI',sans-serif;background:linear-gradient(180deg,#eef4f0
     <div class="filter-chip active" data-at="agendamento" onclick="setAgendaFilter(this)">📅 Agendamentos</div>
     <div class="filter-chip" data-at="visita" onclick="setAgendaFilter(this)">✅ Realizadas</div>
     <div class="filter-chip" data-at="todos" onclick="setAgendaFilter(this)">Todos</div>
+  </div>
+  <!-- Filtro por pessoa/grupo (só para quem vê equipe) -->
+  <div id="agenda-pessoa-filter" style="display:none;margin-bottom:10px">
+    <div id="agenda-grupo-chips" class="period-filter" style="margin-bottom:6px"></div>
+    <select id="agenda-pessoa-sel" onchange="setAgendaPessoa(this.value)" style="width:100%;border:1.5px solid #ddd;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;color:var(--txt);background:#fff"></select>
+  </div>
+  <!-- Resumo da semana em números -->
+  <div class="card" id="card-resumo-semana" style="padding:12px 14px;margin-bottom:10px">
+    <div class="card-title" style="margin-bottom:8px">Resumo da semana <span id="resumo-semana-escopo" style="text-transform:none;letter-spacing:0;font-weight:600"></span></div>
+    <div id="resumo-semana-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
+    <div id="resumo-semana-nomes" style="font-size:11px;color:var(--txt2);margin-top:8px;display:none"></div>
   </div>
   <div class="week-strip" id="week-strip"></div>
   <div class="card" style="padding:14px;margin-bottom:10px">
@@ -981,7 +997,12 @@ function renderSyncManualInfo(){
   var el = document.getElementById('sync-manual-info');
   if(el) el.textContent = texto;
   var elAgenda = document.getElementById('minha-sync-status');
-  if(elAgenda) elAgenda.textContent = '☁️ '+texto;
+  if(elAgenda) elAgenda.textContent = lastSync ? 'Meus dados enviados: '+texto.replace('Última sincronização: ','') : 'Meus dados: ainda não enviados';
+}
+// Botão único da Agenda: envia o que é meu (se houver) e busca a agenda da equipe/nuvem.
+function sincronizarAgenda(){
+  if(loadData().length) sincronizarManual();
+  fetchDadosDiretor(function(){ if(STATE.screen==='agenda') renderWeekAgenda(); });
 }
 function sincronizarManual(){
   var btn = document.getElementById('btn-sync-manual');
@@ -1933,6 +1954,127 @@ function excluirVisitaCard(id, ev){
 }
 
 // ==================== AGENDA SEMANAL ====================
+// Filtro por pessoa/grupo (2026-11-13): com a equipe do Luiz em 10 pessoas (regionais +
+// Gerentes Trainers), cada dia virava uma lista longa. STATE.agendaPessoa:
+// 'todos' | 'g:<Grupo>' | '<usuario>'. Reseta no logout (doLogout zera STATE.usuario e a
+// próxima pessoa pode não ver o mesmo grupo — renderPessoaFilter valida e cai em 'todos').
+var GRUPO_POR_ROLE = {
+  'Regional':'Regionais', 'Gerente Trainer':'Trainers', 'Multiplicador':'Multiplicadores',
+  'Especialista de Lojas':'Esp. de Loja', 'Auditor':'Auditores'
+};
+function grupoDe(u){
+  var r = (USERS[u]&&USERS[u].role)||'';
+  return GRUPO_POR_ROLE[r] || 'Gerentes';
+}
+function pessoasVisiveisAgenda(){
+  return visiveisFor(STATE.usuario).filter(function(u){ return u!=='Diretor'; });
+}
+// null = sem filtro (todos). Senão, lista de usuários que passam no filtro.
+function pessoasNoFiltro(){
+  var f = STATE.agendaPessoa||'todos';
+  if(f==='todos') return null;
+  var vis = pessoasVisiveisAgenda();
+  if(f.indexOf('g:')===0){ var g=f.slice(2); return vis.filter(function(u){ return grupoDe(u)===g; }); }
+  return vis.indexOf(f)>=0 ? [f] : null;
+}
+function setAgendaPessoa(val){
+  STATE.agendaPessoa = val||'todos';
+  renderWeekAgenda();
+}
+function renderPessoaFilter(temEquipe){
+  var wrap = document.getElementById('agenda-pessoa-filter');
+  if(!wrap) return;
+  if(!temEquipe){ wrap.style.display='none'; STATE.agendaPessoa='todos'; return; }
+  wrap.style.display='';
+  var vis = pessoasVisiveisAgenda();
+  var grupos = [];
+  vis.forEach(function(u){ var g=grupoDe(u); if(grupos.indexOf(g)<0) grupos.push(g); });
+  var f = STATE.agendaPessoa||'todos';
+  var valido = f==='todos' || (f.indexOf('g:')===0 && grupos.indexOf(f.slice(2))>=0) || vis.indexOf(f)>=0;
+  if(!valido){ f='todos'; STATE.agendaPessoa='todos'; }
+  var chip = function(val,label,n){
+    return '<div class="filter-chip'+(f===val?' active':'')+'" onclick="setAgendaPessoa(\''+val+'\')">'+label+(n!=null?' <span style="opacity:.6">'+n+'</span>':'')+'</div>';
+  };
+  document.getElementById('agenda-grupo-chips').innerHTML =
+    chip('todos','Todos',vis.length) +
+    (grupos.length>1 ? grupos.map(function(g){
+      return chip('g:'+g, g, vis.filter(function(u){ return grupoDe(u)===g; }).length);
+    }).join('') : '');
+  var sel = document.getElementById('agenda-pessoa-sel');
+  sel.innerHTML = '<option value="todos">👤 Ver uma pessoa…</option>' + grupos.map(function(g){
+    return '<optgroup label="'+g+'">' + vis.filter(function(u){ return grupoDe(u)===g; })
+      .sort(function(a,b){ return fmtReg(a).localeCompare(fmtReg(b)); })
+      .map(function(u){ return '<option value="'+u+'"'+(f===u?' selected':'')+'>'+fmtReg(u)+'</option>'; }).join('') + '</optgroup>';
+  }).join('');
+  if(f==='todos' || f.indexOf('g:')===0) sel.value='todos';
+}
+
+// Resumo da semana (2026-11-13): números da semana exibida, respeitando o filtro de pessoa
+// mas não o filtro Agendamentos/Realizadas (o resumo precisa dos dois para calcular).
+// Cumprimento = agendamentos com data ≤ hoje que tiveram visita realizada da mesma pessoa,
+// no mesmo posto, na data agendada ou depois (confirmarVisita grava a visita com data de hoje).
+function renderResumoSemana(days, temEquipe){
+  var card = document.getElementById('card-resumo-semana');
+  if(!card) return;
+  var user = STATE.usuario;
+  var vis = user==='Diretor' ? pessoasVisiveisAgenda() : visiveisFor(user);
+  var pessoas = pessoasNoFiltro() || vis;
+  var ini = days[0], fim = days[days.length-1], hoje = today();
+  var data = loadData().filter(function(v){
+    var u = v.usuario||v.regional;
+    return pessoas.indexOf(u)>=0 && v.data>=ini && v.data<=fim;
+  });
+  var agend = data.filter(function(v){ return v.tipo==='agendamento'; });
+  var visitas = data.filter(function(v){ return v.tipo==='visita'; });
+  var vencidos = agend.filter(function(a){ return a.data<=hoje; });
+  var cumpridos = vencidos.filter(function(a){
+    var ua = a.usuario||a.regional;
+    return visitas.some(function(v){ return (v.usuario||v.regional)===ua && String(v.postoFil)===String(a.postoFil) && v.data>=a.data; });
+  });
+  var atrasados = vencidos.filter(function(a){ return a.data<hoje && cumpridos.indexOf(a)<0; }).length;
+  var pct = vencidos.length ? Math.round(cumpridos.length/vencidos.length*100) : null;
+  var semanaAtual = hoje>=ini && hoje<=fim;
+
+  var tile = function(valor,label,cor,sub){
+    return '<div style="background:var(--cinza2);border-radius:10px;padding:8px 4px;text-align:center">'+
+      '<div style="font-size:19px;font-weight:800;color:'+(cor||'var(--txt)')+';line-height:1.1">'+valor+'</div>'+
+      '<div style="font-size:9.5px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.3px;margin-top:3px">'+label+'</div>'+
+      (sub?'<div style="font-size:9.5px;color:var(--txt2);margin-top:1px">'+sub+'</div>':'')+
+      '</div>';
+  };
+  var corPct = pct==null?'var(--cinza3)':pct>=90?'var(--verde)':pct>=70?'var(--azul)':'var(--laranja)';
+  var tiles = tile(agend.length,'Agendadas') + tile(visitas.length,'Realizadas','var(--verde)') +
+    tile(pct==null?'—':pct+'%','Cumprimento',corPct, atrasados?atrasados+' atrasada'+(atrasados>1?'s':''):'');
+
+  var nomesEl = document.getElementById('resumo-semana-nomes');
+  nomesEl.style.display='none';
+  if(temEquipe){
+    // Quem está sem nada na agenda hoje (e não está de férias). Gerentes de área ficam fora
+    // da conta quando o filtro é "Todos": a cobrança é sobre quem vai a campo.
+    var base = (pessoasNoFiltro() || vis.filter(function(u){ return !isGerenteArea(u); }));
+    if(semanaAtual){
+      var semAgenda = base.filter(function(u){
+        if(estaDeFerias(u, hoje)) return false;
+        return !loadData().some(function(v){ return (v.usuario||v.regional)===u && v.data===hoje; });
+      });
+      tiles += tile(semAgenda.length,'Sem agenda hoje', semAgenda.length?'var(--laranja)':'var(--verde)');
+      if(semAgenda.length){
+        nomesEl.style.display='';
+        nomesEl.innerHTML = '<b style="color:var(--laranja)">Sem agenda hoje:</b> '+semAgenda.map(fmtReg).sort().join(', ');
+      }
+    } else {
+      tiles += tile(base.length,'Pessoas');
+    }
+  } else {
+    var hojeN = agend.filter(function(a){ return a.data===hoje; }).length;
+    tiles += tile(semanaAtual?hojeN:'—','Hoje');
+  }
+  document.getElementById('resumo-semana-kpis').innerHTML = tiles;
+  var f = STATE.agendaPessoa||'todos';
+  document.getElementById('resumo-semana-escopo').textContent =
+    !temEquipe ? '' : f==='todos' ? '· equipe' : f.indexOf('g:')===0 ? '· '+f.slice(2) : '· '+fmtReg(f);
+}
+
 function setAgendaFilter(el){
   document.querySelectorAll('#agenda-tipo-filter .filter-chip').forEach(function(c){ c.classList.remove('active'); });
   el.classList.add('active');
@@ -1945,10 +2087,12 @@ function getByDay(){
   var user = STATE.usuario;
   var visiveisList = visiveisFor(user);
   var filtro = STATE.agendaFilter||'agendamento';
+  var noFiltro = pessoasNoFiltro();
   var mine = data.filter(function(v){
     var u = v.usuario||v.regional;
     var visivel = user==='Diretor' || visiveisList.indexOf(u)>=0;
     if(!visivel) return false;
+    if(noFiltro && noFiltro.indexOf(u)<0) return false;
     if(filtro==='todos') return true;
     return v.tipo===filtro;
   });
@@ -1970,18 +2114,17 @@ function renderWeekAgenda(){
   var filterEl = document.getElementById('agenda-tipo-filter');
   if(filterEl) filterEl.style.display = temEquipe ? 'flex' : 'none';
 
-  var syncBar = document.getElementById('agenda-sync-bar');
-  if(temEquipe){
-    if(!syncBar){
-      syncBar = document.createElement('div');
-      syncBar.id = 'agenda-sync-bar';
-      syncBar.style.cssText = 'display:flex;align-items:center;gap:8px;background:#e8f5e9;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:12px;color:var(--verde2)';
-      syncBar.innerHTML = '<span style="flex:1" id="agenda-sync-status">📅 Agenda da equipe</span>'+
-        '<button onclick="fetchDadosDiretor()" style="background:var(--verde);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">↻ Atualizar</button>';
-      document.getElementById('screen-agenda').insertBefore(syncBar, filterEl);
-    }
-  } else if(syncBar){ syncBar.remove(); }
+  // Barra de sincronização da equipe foi unificada no card do topo (card-minha-sync).
+  var syncStatusEl = document.getElementById('agenda-sync-status');
+  if(syncStatusEl && !/Atualizando/.test(syncStatusEl.textContent)){
+    var lf = localStorage.getItem('crm_dir_last_fetch');
+    syncStatusEl.textContent = lf
+      ? '✅ Agenda'+(temEquipe?' da equipe':'')+' atualizada às '+new Date(parseInt(lf)).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
+      : '☁️ Agenda ainda não baixada';
+  }
 
+  renderPessoaFilter(temEquipe);
+  renderResumoSemana(days, temEquipe);
   renderWeekJumpSelect(days);
   renderFeriasListAgenda();
   renderMetaVisitasAgenda();
@@ -2102,7 +2245,7 @@ function renderWeekStrip(days, byDay){
     var feriasSemEvento = '';
     if(temEquipeView){
       var jaMostrados = Object.keys(grupos);
-      feriasSemEvento = visiveisFor(STATE.usuario).filter(function(u){
+      feriasSemEvento = (pessoasNoFiltro() || visiveisFor(STATE.usuario)).filter(function(u){
         return jaMostrados.indexOf(u)<0 && estaDeFerias(u, ds);
       }).map(function(u){
         return '<div class="ferias-badge">🏖️ '+fmtReg(u)+'</div>';
