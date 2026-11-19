@@ -1158,7 +1158,46 @@ var AGENDA_AUDITORIA_DESBLOQUEADA = false;
 // Cassiano (Gestor de Auditoria) + sua equipe de auditores — mini agenda desses 3 na tela
 // de login fica com cadeado (ver renderLoginAgendamentos), só desbloqueia com o PIN do
 // Diretor ou do próprio Cassiano (ver verificarPin abaixo).
-function usuariosAgendaOculta(){ return ['Cassiano'].concat((USERS.Cassiano&&USERS.Cassiano.equipe)||[]); }
+// 2026-11-19: agenda de auditoria LIBERADA para todos visualizarem (pedido do usuário).
+// Ninguém mais fica com cadeado no login — usuariosAgendaOculta() devolve vazio, o que
+// desliga o cadeado e o desbloqueio por PIN sem precisar remover esse código.
+function usuariosAgendaOculta(){ return []; }
+// Agenda pública: Cassiano + auditores aparecem na aba Agenda de TODOS os usuários, só
+// para visualizar. Editar/excluir/confirmar continua só para quem já tinha alçada
+// (visiveisFor: o próprio, o gerente da equipe e o Diretor).
+function usuariosAgendaPublica(){ return ['Cassiano'].concat((USERS.Cassiano&&USERS.Cassiano.equipe)||[]); }
+// Pessoas cuja agenda o usuário enxerga na aba Agenda = alçada normal + agenda pública.
+function pessoasAgendaFor(u){
+  var base = visiveisFor(u);
+  if(u==='Diretor') return base;
+  usuariosAgendaPublica().forEach(function(p){ if(base.indexOf(p)<0) base.push(p); });
+  return base;
+}
+// Tem gente na agenda além da própria pessoa (equipe ou agenda pública) — controla filtros e
+// agrupamento por nome na aba Agenda.
+function agendaTemOutros(u){ return pessoasAgendaFor(u).filter(function(p){ return p!==u && p!=='Diretor'; }).length>0; }
+// Pode editar/excluir/confirmar o registro? Só dentro da alçada normal (nunca pela agenda pública).
+function podeEditarRegistro(v){
+  var u = STATE.usuario; if(!u) return false;
+  if(u==='Diretor') return true;
+  return visiveisFor(u).indexOf(v.usuario||v.regional)>=0;
+}
+// Dados da aba Agenda: loadData() (alçada normal) + registros da agenda pública vindos do
+// cache da nuvem. Só leitura — NUNCA gravar o retorno disto com saveData().
+function loadAgendaData(){
+  var data = loadData();
+  var u = STATE.usuario;
+  if(!u || u==='Diretor') return data;
+  var ids = {}; data.forEach(function(x){ if(x.id) ids[x.id]=1; });
+  var pub = usuariosAgendaPublica();
+  var cache = [];
+  try{ cache = JSON.parse(localStorage.getItem('crm_dir_cache')||'[]'); }catch(e){}
+  cache.forEach(function(x){
+    var uu = x.usuario||x.regional;
+    if(x.id && !ids[x.id] && pub.indexOf(uu)>=0){ ids[x.id]=1; data.push(x); }
+  });
+  return data;
+}
 
 function iniciarLogin(user){
   PIN_TARGET_USER = user;
@@ -1967,7 +2006,7 @@ function grupoDe(u){
   return GRUPO_POR_ROLE[r] || 'Gerentes';
 }
 function pessoasVisiveisAgenda(){
-  return visiveisFor(STATE.usuario).filter(function(u){ return u!=='Diretor'; });
+  return pessoasAgendaFor(STATE.usuario).filter(function(u){ return u!=='Diretor'; });
 }
 // null = sem filtro (todos). Senão, lista de usuários que passam no filtro.
 function pessoasNoFiltro(){
@@ -2020,7 +2059,8 @@ function renderResumoSemana(days, temEquipe){
   var vis = user==='Diretor' ? pessoasVisiveisAgenda() : visiveisFor(user);
   var pessoas = pessoasNoFiltro() || vis;
   var ini = days[0], fim = days[days.length-1], hoje = today();
-  var data = loadData().filter(function(v){
+  var dadosAgenda = loadAgendaData();
+  var data = dadosAgenda.filter(function(v){
     var u = v.usuario||v.regional;
     return pessoas.indexOf(u)>=0 && v.data>=ini && v.data<=fim;
   });
@@ -2055,7 +2095,7 @@ function renderResumoSemana(days, temEquipe){
     if(semanaAtual){
       var semAgenda = base.filter(function(u){
         if(estaDeFerias(u, hoje)) return false;
-        return !loadData().some(function(v){ return (v.usuario||v.regional)===u && v.data===hoje; });
+        return !dadosAgenda.some(function(v){ return (v.usuario||v.regional)===u && v.data===hoje; });
       });
       tiles += tile(semAgenda.length,'Sem agenda hoje', semAgenda.length?'var(--laranja)':'var(--verde)');
       if(semAgenda.length){
@@ -2083,9 +2123,9 @@ function setAgendaFilter(el){
 }
 
 function getByDay(){
-  var data = loadData();
+  var data = loadAgendaData();
   var user = STATE.usuario;
-  var visiveisList = visiveisFor(user);
+  var visiveisList = pessoasAgendaFor(user);
   var filtro = STATE.agendaFilter||'agendamento';
   var noFiltro = pessoasNoFiltro();
   var mine = data.filter(function(v){
@@ -2110,7 +2150,7 @@ function renderWeekAgenda(){
   // Mostra filtro de tipo apenas para quem vê subordinados
   var user = STATE.usuario;
   var h = USERS[user];
-  var temEquipe = user==='Diretor' || (h&&h.equipe&&h.equipe.length);
+  var temEquipe = user==='Diretor' || (h&&h.equipe&&h.equipe.length) || agendaTemOutros(user);
   var filterEl = document.getElementById('agenda-tipo-filter');
   if(filterEl) filterEl.style.display = temEquipe ? 'flex' : 'none';
 
@@ -2205,7 +2245,7 @@ function renderWeekStrip(days, byDay){
   if(!strip) return;
   var isDiretor = STATE.usuario==='Diretor';
   var hCur = USERS[STATE.usuario];
-  var temEquipeView = isDiretor || (hCur && hCur.equipe && hCur.equipe.length);
+  var temEquipeView = isDiretor || (hCur && hCur.equipe && hCur.equipe.length) || agendaTemOutros(STATE.usuario);
   var filtro = STATE.agendaFilter||'agendamento';
   var semLabel = filtro==='visita'?'Nenhuma visita realizada':filtro==='todos'?'Nenhum registro':'Nenhum agendamento';
 
@@ -2260,7 +2300,7 @@ function renderWeekStrip(days, byDay){
         var cor = corUser(k);
         var feriasTag = estaDeFerias(k, ds) ? ' <span class="ferias-tag">🏖️</span>' : '';
         var cards = grupos[k].map(function(v){ return renderEventoCard(v, isHoje); }).join('');
-        return '<div style="font-size:10px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.4px;margin:0 0 4px">'+fmtReg(k)+feriasTag+'</div>'+cards;
+        return '<div style="font-size:10px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.4px;margin:0 0 4px">'+fmtReg(k)+(grupoDe(k)==='Auditores'?' · Auditor':'')+feriasTag+'</div>'+cards;
       }).join('');
     } else {
       content = evs.map(function(v){ return renderEventoCard(v, isHoje); }).join('');
@@ -2301,6 +2341,23 @@ function iniciarVisitaAvulsa(ds){
 function renderEventoCard(v, isHoje){
   var cor = corUser(v.usuario||v.regional);
   var isAgend = v.tipo==='agendamento';
+  // Agenda pública (Cassiano/auditores) fora da alçada: card só de leitura, sem clique,
+  // sem editar/excluir/confirmar (2026-11-19).
+  if(!podeEditarRegistro(v)){
+    return '<div class="week-event-card card" style="border-left-color:'+cor+';padding:14px;cursor:default">'+
+      '<div class="we-body" style="width:100%">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
+      '<div style="font-size:22px">'+(isAgend?'📅':'✅')+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+      '<div class="we-posto">'+v.postoNome+'</div>'+
+      '<div class="we-reg" style="color:'+cor+'">'+(v.hora?v.hora:'')+'</div>'+
+      '</div>'+
+      (isAgend?'<span class="badge badge-agendada" style="margin-left:auto">Agend.</span>':'<span class="badge badge-ok" style="margin-left:auto">Realizada</span>')+
+      '<span title="Só visualização" style="font-size:10px;color:var(--txt2);margin-left:6px;flex-shrink:0">👁 só ver</span>'+
+      '</div>'+
+      (v.obs?'<div style="font-size:12px;color:var(--txt2);font-style:italic;margin-top:4px">'+v.obs.slice(0,80)+'</div>':'')+
+      '</div></div>';
+  }
   // Diretor só acompanha (visão sistêmica), não confirma visita — ação operacional de quem vai a campo
   var btnConfirmar = isAgend && isHoje && STATE.usuario!=='Diretor' ?
     '<button class="btn btn-primary btn-sm" style="margin-top:10px;width:100%" onclick="confirmarVisita(\''+v.id+'\',event)">✅ Confirmar Visita Realizada</button>' : '';
